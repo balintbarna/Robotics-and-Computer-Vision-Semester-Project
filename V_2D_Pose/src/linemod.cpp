@@ -33,28 +33,27 @@ using namespace Eigen;
 using namespace covis;
 
 // OpenCV
-// OpenCV
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd/linemod.hpp>
 
 using namespace cv;
-
 using namespace std;
 
 inline Rect autocrop(Mat& src);
 
 cv::linemod::Detector createLinemodDetector(int pyramid_depth)
 {
-  std::vector<int> pyramid;
+  vector<int> pyramid;
   for(int i = 0; i < pyramid_depth; i++)
   {
     pyramid.push_back(pow(2,i));
   }
 
-  std::vector< Ptr<cv::linemod::Modality> > modals;
-  modals.push_back( cv::linemod::Modality::create ("ColorGradient") );
-  cv::linemod::Detector detector( modals, pyramid );
+  vector<Ptr<cv::linemod::Modality>> modals;
+  modals.push_back(cv::linemod::Modality::create("ColorGradient"));
+
+  cv::linemod::Detector detector(modals, pyramid);
   return detector;
 }
 
@@ -62,10 +61,8 @@ cv::linemod::Detector createLinemodDetector(int pyramid_depth)
  * Main entry point
  */
 int main(int argc, const char** argv) {
-  using namespace std;
   // Setup program options
   core::ProgramOptions po;
-  //po.addPositional("template", "template image(s)");
   po.addPositional("template", "folder containing template image(s) and pose(s)");
   po.addPositional("image", "test image(s)");
     
@@ -75,10 +72,8 @@ int main(int argc, const char** argv) {
   // Parse
   if(!po.parse(argc, argv))
     return 1;
-  //po.print();//because it is run in script
     
   const std::vector<std::string> ipath = po.getVector("image");
-
   const std::string tpath = po.getValue("template");
   
   const float threshold = po.getValue<float>("threshold");
@@ -86,17 +81,13 @@ int main(int argc, const char** argv) {
   const int pyramid_depth = po.getValue<int>("pyramid_depth");
   cout<<"pyramid levels:"<<pyramid_depth<<endl;
   
-  // Training data to be loaded for the 2D matcher
-  std::vector<Mat> templates;
-  std::vector<Eigen::Matrix4f> tposes;
-
-  std::vector<cv::Point> offset;
-  
-  int cnt = 0; // Current template index
 
   cv::linemod::Detector detector = createLinemodDetector(pyramid_depth);
 
-  while(true) {
+  // Training data to be loaded for the 2D matcher
+  std::vector<Mat> templates;
+  std::vector<cv::Point> offset;
+  for(int cnt = 0;;cnt++) {
     // Get RGB template
     char tfile[1024];
     sprintf(tfile, "/template%04i.png", cnt);
@@ -105,9 +96,6 @@ int main(int argc, const char** argv) {
     if(t.empty())
       break;
     
-    templates.push_back(t.clone());
-
-    cv::Mat out;
 
     Rect win = autocrop(t);
 	
@@ -117,38 +105,40 @@ int main(int argc, const char** argv) {
     win.y = win.y - 2;
 	
     t = t(win);
+    templates.push_back(t.clone());
 
-    offset.push_back( cv::Point( win.width, win.height ));
+    // this will be used to get center point, match returns top left corner
+    offset.push_back(cv::Point(win.width,win.height));
     
-    cv::inRange(t, cv::Scalar(0,0,244), cv::Scalar(1,1,255), out);
-    out = 255 - out;
+    // create mask, background color is (64 64 64)
+    cv::Mat mask;
+    cv::inRange(t, cv::Scalar(64,64,64), cv::Scalar(64,64,64), mask);
+    mask = 255 - mask;
     
-    cv::imshow("template", t );
-    cv::imshow("mask", out );
-    //cv::waitKey();
-      
+    // // show
+    // cv::imshow("template", t );
+    // cv::imshow("mask", mask );
+    // cv::waitKey();
+
+    // is vector because you need one source for each modality, we only use one
     std::vector<Mat> sources;
     sources.push_back(t.clone());
 
     sprintf(tfile, "%04i", cnt);
 
     // insert templates into the detectior
-    detector.addTemplate(sources, std::string(tfile), out);
-
-    cnt++;
+    detector.addTemplate(sources, std::string(tfile), mask);
   }    
 
   std::cout << "Number of templates: " << templates.size() << std::endl;
 
   for(int image_index = 0; image_index < int(ipath.size()); image_index++) {
-    	
+    cout<<"Matching image "<<image_index<<endl;
     Mat img = imread(ipath[image_index], IMREAD_UNCHANGED); // imread(po.getValue("image"), IMREAD_UNCHANGED);
     COVIS_ASSERT_MSG(!img.empty(), "Cannot read test image " << po.getValue("image") << "!");
-
-    cv::Mat image = img.clone(); 
 		    
     std::vector<Mat> sources;
-    sources.push_back( image );
+    sources.push_back(img.clone());
 
     std::vector< cv::linemod::Match > matches;
 
@@ -162,10 +152,14 @@ int main(int argc, const char** argv) {
     }
     
     int i = 0;
-    	    	   
-    cv::imshow("temp", templates[ atoi(matches[i].class_id.c_str()) ]);
+    int templateIndex = atoi(matches[i].class_id.c_str());
+    cv::imshow("temp", templates[templateIndex]);
 
-    circle(img, cv::Point( matches[i].x, matches[i].y), 8, cv::Scalar(0, 255, 0) , -1 );
+    auto center = offset[templateIndex];
+    center.x /=2;
+    center.y /=2;
+
+    circle(img, cv::Point( matches[i].x+center.x, matches[i].y+center.y), 8, cv::Scalar(0, 255, 0) , -1 );
 
     char pfile[1024];
     sprintf(pfile, "/template%04i_pose.txt",  atoi(matches[i].class_id.c_str()) );
@@ -177,7 +171,6 @@ int main(int argc, const char** argv) {
     cv::imshow( "img", img );
     cv::waitKey(0);
   }
-  
   return 0;
 }
 
