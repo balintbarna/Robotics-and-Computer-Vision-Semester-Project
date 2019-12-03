@@ -44,22 +44,33 @@ using namespace std;
 
 inline Rect autocrop(Mat& src);
 
-cv::linemod::Detector createLinemodDetector( )
+cv::linemod::Detector createLinemodDetector(int pyramid_depth)
 {
+  std::vector<int> pyramid;
+  for(int i = 0; i < pyramid_depth; i++)
+  {
+    pyramid.push_back(pow(2,i));
+  }
 
+  std::vector< Ptr<cv::linemod::Modality> > modals;
+  modals.push_back( cv::linemod::Modality::create ("ColorGradient") );
+  cv::linemod::Detector detector( modals, pyramid );
+  return detector;
 }
 
 /*
  * Main entry point
  */
 int main(int argc, const char** argv) {
+  using namespace std;
   // Setup program options
   core::ProgramOptions po;
   //po.addPositional("template", "template image(s)");
   po.addPositional("template", "folder containing template image(s) and pose(s)");
   po.addPositional("image", "test image(s)");
     
-  po.addOption("threshold", 't', 50, "if positive, accept all detections up to this threshold");
+  po.addOption("threshold", 't', 10, "if positive, accept all detections up to this threshold");
+  po.addOption("pyramid_depth", 'p', 3, "levels of pyramid");
 
   // Parse
   if(!po.parse(argc, argv))
@@ -71,7 +82,10 @@ int main(int argc, const char** argv) {
   const std::string tpath = po.getValue("template");
   
   const float threshold = po.getValue<float>("threshold");
-
+  cout<<"threshold:"<<threshold<<endl;
+  const int pyramid_depth = po.getValue<int>("pyramid_depth");
+  cout<<"pyramid levels:"<<pyramid_depth<<endl;
+  
   // Training data to be loaded for the 2D matcher
   std::vector<Mat> templates;
   std::vector<Eigen::Matrix4f> tposes;
@@ -80,7 +94,7 @@ int main(int argc, const char** argv) {
   
   int cnt = 0; // Current template index
 
-  //cv::linemod::Detector detector = createLinemodDetector();
+  cv::linemod::Detector detector = createLinemodDetector(pyramid_depth);
 
   while(true) {
     // Get RGB template
@@ -111,7 +125,7 @@ int main(int argc, const char** argv) {
     
     cv::imshow("template", t );
     cv::imshow("mask", out );
-    cv::waitKey();
+    //cv::waitKey();
       
     std::vector<Mat> sources;
     sources.push_back(t.clone());
@@ -119,6 +133,7 @@ int main(int argc, const char** argv) {
     sprintf(tfile, "%04i", cnt);
 
     // insert templates into the detectior
+    detector.addTemplate(sources, std::string(tfile), out);
 
     cnt++;
   }    
@@ -137,7 +152,14 @@ int main(int argc, const char** argv) {
 
     std::vector< cv::linemod::Match > matches;
 
+    detector.match( sources, threshold, matches );
+
     std::cout << "Number of matches: " << matches.size() << std::endl;
+    if(matches.size() < 1)
+    {
+      std::cout<<"No matches, continuing..."<<std::endl;
+      continue;
+    }
     
     int i = 0;
     	    	   
