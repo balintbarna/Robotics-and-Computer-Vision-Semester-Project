@@ -44,7 +44,7 @@
 	<Frame name="Duck" refframe="Table"  type="Movable" daf="true" >
      <RPY> -90 0 90 </RPY> <Pos> -0.45 0.474 0.150 </Pos>
      <Drawable name="Duck" refframe="Duck">
-         <Polytope file="parts/obj_09" />
+         <Polytope file="parts/duck" />
      </Drawable>
 </Frame>
 
