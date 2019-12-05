@@ -2,7 +2,7 @@
 
   <!--BASE-->
   <Frame name="Base" type="Fixed">
-    <RPY> 0 0 0 </RPY>
+    <RPY> 45 0 0 </RPY>
     <Pos> 0 0 0 </Pos>
   </Frame>
 
@@ -48,7 +48,7 @@
 
   <!-- JOINT POSITION AND VELOCITY LIMITS-->
 
-  <PosLimit refjoint="Finger1" min="0.0" max="0.055" />  
+  <PosLimit refjoint="Finger1" min="0.00401" max="0.055" />  
   <VelLimit refjoint="Finger1" max="0.42" /> 
 <!--  <PosLimit refjoint="Finger2" min="0.0" max="0.055" /> -->
 <!--  <VelLimit refjoint="Finger2" max="0.42"/> -->

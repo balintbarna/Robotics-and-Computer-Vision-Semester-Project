@@ -16,21 +16,14 @@
 
 
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
-		<RPY>0 0 0</RPY> <Pos>0 0 0.15</Pos>
+		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
 	</Frame>
-	
+	<Include file="wsg50/wsg50.xml" />
 	
 	<Frame name="Bottle" refframe="Table"  type="Movable" daf="true" >
      <RPY> -90 0 90 </RPY> <Pos> 0 0.474 0.21 </Pos>
      <Drawable name="Bottle" refframe="Bottle">
          <Polytope file="parts/bottle" />
-     </Drawable>
-</Frame>
-
-	<Frame name="Square" refframe="Table"  type="Movable" daf="true" >
-     <RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.150</Pos>
-     <Drawable name="Square" refframe="Square">
-         <Polytope file="parts/square" />
      </Drawable>
 </Frame>
 
@@ -41,10 +34,10 @@
      </Drawable>
 </Frame>
 
-	<Frame name="Duck" refframe="Table"  type="Movable" daf="true" >
-     <RPY> -90 0 90 </RPY> <Pos> -0.45 0.474 0.150 </Pos>
-     <Drawable name="Duck" refframe="Duck">
-         <Polytope file="parts/duck" />
+	<Frame name="Dog" refframe="Table"  type="Movable" daf="true" >
+     <RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
+     <Drawable name="Dog" refframe="Dog">
+         <Polytope file="parts/dog" />
      </Drawable>
 </Frame>
 

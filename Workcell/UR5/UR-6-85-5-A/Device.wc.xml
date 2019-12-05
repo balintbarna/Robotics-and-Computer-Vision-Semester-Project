@@ -45,7 +45,7 @@
  
 <Joint name="Joint5" type="Revolute">
 	<Pos>0 0 0.093</Pos>
-	<RPY>0 0 -90</RPY>
+	<RPY>0 45 -90</RPY>
 </Joint>
 
 <Frame name="DH5" type="Movable" />
