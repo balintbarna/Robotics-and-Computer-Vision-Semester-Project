@@ -34,17 +34,11 @@
      </Drawable>
 </Frame>
 
-<<<<<<< HEAD
+
 	<Frame name="Dog" refframe="Table"  type="Movable" daf="true" >
      <RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
      <Drawable name="Dog" refframe="Dog">
          <Polytope file="parts/dog" />
-=======
-	<Frame name="Duck" refframe="Table"  type="Movable" daf="true" >
-     <RPY> 0 0 0 </RPY> <Pos> -2 0.4 0.111 </Pos>
-     <Drawable name="Duck" refframe="Duck">
-         <Polytope file="parts/duck2" />
->>>>>>> d124e40856e3f1964c4af39953a464cd9998cd41
      </Drawable>
 </Frame>
 
