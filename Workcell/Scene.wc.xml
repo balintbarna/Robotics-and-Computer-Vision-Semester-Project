@@ -34,7 +34,6 @@
      </Drawable>
 </Frame>
 
-
 	<Frame name="Dog" refframe="Table"  type="Movable" daf="true" >
      <RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
      <Drawable name="Dog" refframe="Dog">
