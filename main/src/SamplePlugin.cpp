@@ -35,7 +35,7 @@ void SamplePlugin::initialize() {
     getRobWorkStudio()->stateChangedEvent().add(std::bind(&SamplePlugin::stateChangedListener, this, std::placeholders::_1), this);
 
 	// Auto load workcell
-    WorkCell::Ptr wc = WorkCellLoader::Factory::load("/home/student/Desktop/Project_WorkCell/Scene.wc.xml");
+    WorkCell::Ptr wc = WorkCellLoader::Factory::load("/home/student/Workspace/RoVi_project/Workcell/Scene.wc.xml");
 	getRobWorkStudio()->setWorkCell(wc);
 
 }
