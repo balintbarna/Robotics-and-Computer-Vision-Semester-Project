@@ -1,0 +1,33 @@
+<WorkCell name="Scene">
+
+	<Frame name="Table" refframe="WORLD" type="Fixed">
+		<RPY>0 0 0</RPY> <Pos>0 0 -1</Pos>
+		<Drawable name="TableGeo" refframe="Table" colmodel="Enabled">
+			<Pos>0 0 0</Pos>
+			<RPY>0 0 0</RPY>
+			<Box x="2" y="2" z="2"/>
+		</Drawable>
+	</Frame>
+
+	<Frame name="URReference" refframe="Table" type="Movable">
+		<RPY>0 0 0</RPY> <Pos>0.5 0.5 1</Pos>
+	</Frame>
+	<Include file="UR5/UR5.wc.xml" />
+	<Frame name="GraspTCP" refframe="UR5.TCP" type="Fixed">
+		<RPY>0 0 0</RPY> <Pos>0 0 0.15</Pos>
+	</Frame>
+
+
+	<Frame name="Cylinder" refframe="WORLD" type="Movable">
+		<RPY>0 0 0</RPY> <Pos>0 0 0.1</Pos>
+		<Drawable name="CylinderGeo" refframe="Cylinder" colmodel="Enabled">
+			<Pos>0 0 0</Pos>
+			<RPY>0 0 0</RPY>
+			<Cylinder radius="0.05" z="0.2"/>
+		</Drawable>
+	</Frame>
+
+	<Frame name="GraspTarget" refframe="Cylinder" type="Fixed">
+		<RPY>0 -90 0</RPY> <Pos>0 0 0</Pos>
+	</Frame>
+</WorkCell>
