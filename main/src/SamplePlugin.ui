@@ -18,6 +18,13 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
+       <widget class="QPushButton" name="_btn_reach">
+        <property name="text">
+         <string>Reachability</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="_btn_im">
         <property name="text">
          <string>Get Image</string>

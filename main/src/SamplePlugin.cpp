@@ -10,6 +10,7 @@ SamplePlugin::SamplePlugin():
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
 
 	// now connect stuff from the ui component
+	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn0    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
@@ -131,6 +132,10 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 
 void SamplePlugin::btnPressed() {
     QObject *obj = sender();
+	if(obj == _btn_reach)
+	{
+		cout<<"reach"<<endl;
+	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
 //		// Toggle the timer on and off
