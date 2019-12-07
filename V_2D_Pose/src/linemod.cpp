@@ -87,7 +87,7 @@ int main(int argc, const char** argv) {
   // Training data to be loaded for the 2D matcher
   std::vector<Mat> templates;
   std::vector<cv::Point> offset;
-  for(int cnt = 0;;cnt++) {
+  for(int cnt = 1;;cnt++) {
     // Get RGB template
     char tfile[1024];
     sprintf(tfile, "/template%04i.png", cnt);
@@ -96,6 +96,7 @@ int main(int argc, const char** argv) {
     if(t.empty())
       break;
     
+    cout<<"file read, cropping"<<endl;
 
     Rect win = autocrop(t);
 	
@@ -112,7 +113,7 @@ int main(int argc, const char** argv) {
     
     // create mask, background color is (64 64 64)
     cv::Mat mask;
-    cv::inRange(t, cv::Scalar(64,64,64), cv::Scalar(64,64,64), mask);
+    cv::inRange(t, cv::Scalar(0,0,244), cv::Scalar(1,1,255), mask);
     mask = 255 - mask;
     
     // // show
@@ -136,6 +137,9 @@ int main(int argc, const char** argv) {
     cout<<"Matching image "<<image_index<<endl;
     Mat img = imread(ipath[image_index], IMREAD_UNCHANGED); // imread(po.getValue("image"), IMREAD_UNCHANGED);
     COVIS_ASSERT_MSG(!img.empty(), "Cannot read test image " << po.getValue("image") << "!");
+
+    cv::imshow("scene", img);
+    cv::waitKey();
 		    
     std::vector<Mat> sources;
     sources.push_back(img.clone());

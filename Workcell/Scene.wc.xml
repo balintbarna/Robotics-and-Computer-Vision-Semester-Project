@@ -28,8 +28,9 @@
 </Frame>
 
 	<Frame name="Cylinder" refframe="Table"  type="Movable" daf="true" >
-     <RPY> -90 0 90 </RPY> <Pos> -0.25 0.474 0.150 </Pos>
+     <RPY> -90 0 0 </RPY> <Pos> -0.25 0.474 0.150 </Pos>
      <Drawable name="Cylinder" refframe="Cylinder">
+		 <RGB>1.0 0 0</RGB>
          <Polytope file="parts/cylinder" />
      </Drawable>
 </Frame>
@@ -37,7 +38,8 @@
 	<Frame name="Dog" refframe="Table"  type="Movable" daf="true" >
      <RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
      <Drawable name="Dog" refframe="Dog">
-         <Polytope file="parts/dog" />
+		 <RGB>1.0 1.0 1.0</RGB>
+         <Polytope file="parts/dog_stl3" />
      </Drawable>
 </Frame>
 
