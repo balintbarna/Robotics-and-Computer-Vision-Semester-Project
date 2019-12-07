@@ -1,0 +1,213 @@
+<Frame name="BaseMov" type="Fixed">
+	<Transform>
+    	1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+</Frame>
+ 
+<DHJoint name="Joint0" alpha="0" a="0" d="0" offset="0" type="schilling"></DHJoint>
+
+<Frame name="DH0" type="Fixed">
+	<Transform>
+		1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+	<Property name="schilling DH" desc="   alpha a d offset    ">
+    	  1.570796327 0 0.0892 0 
+	</Property>
+</Frame>
+ 
+<DHJoint name="Joint1" alpha="90" a="0" d="0.08920" offset="0" type="schilling"></DHJoint>
+
+<Frame name="DH1" refframe="Joint1" type="Fixed" >
+	<Transform>
+		1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+	<Property name="HGP schilling DH" desc="alpha a d offset">
+    	  0 -0.425 0 0 
+	</Property>
+</Frame>
+ 
+<DHJoint name="Joint2" alpha="0" a="-0.425" d="0" offset="0" type="schilling"></DHJoint>
+
+<Frame name="DH2" type="Fixed">
+	<Transform>
+		1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+	<Property name="HGP schilling DH" desc="   alpha a d offset    ">
+    	  0 -0.39243 0 0 
+	</Property>
+</Frame>
+ 
+<DHJoint name="Joint3" alpha="0" a="-0.39243" d="0" offset="0" type="schilling">
+	
+</DHJoint>
+
+<Frame name="DH3" type="Fixed">
+	<Transform>
+		1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+	<Property name="schilling DH" desc="   alpha a d offset    ">
+    	  1.570796327  0  0.109 0 
+	</Property>
+</Frame>
+ 
+<DHJoint name="Joint4"  alpha="90" a="0" d="0.109" offset="0" type="schilling"></DHJoint>
+
+<Frame name="DH4" type="Fixed">
+	<Transform>
+		1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+	<Property name="schilling DH" desc="   alpha a d offset    ">
+    	  -1.570796327  0  0.093 0 
+	</Property>
+</Frame>
+ 
+<DHJoint name="Joint5" alpha="-90" a="0" d="0.093" offset="0" type="schilling"></DHJoint>
+
+<Frame name="DH5" type="Fixed">
+	<Transform>
+		1 0 0 0
+		0 1 0 0
+		0 0 1 0
+	</Transform>
+	<Property name="schilling DH" desc="   alpha a d offset    ">
+    	  0  0  0.082 0 
+	</Property>
+</Frame>
+ <Frame name="TCP" refframe="Joint5" >
+	<Transform>
+		1 0 0 0
+		0 1 0 0.0<!--0.015-->
+		0 0 1 0.08<!--0.237 -->  		
+	</Transform>
+ </Frame>
+
+<!-- Standard Joint Limits -->
+<!--
+ <PosLimit refjoint="Joint0" min="-180" max="180" />
+ <PosLimit refjoint="Joint1" min="-270" max="90" />
+ <PosLimit refjoint="Joint2" min="-180" max="180" />
+ <PosLimit refjoint="Joint3" min="-270" max="90" /> 
+ <PosLimit refjoint="Joint4" min="-180" max="180" />
+ <PosLimit refjoint="Joint5" min="-180" max="180" />
+-->
+
+	<PosLimit refjoint="Joint0" min="-360" max="360" />
+	<PosLimit refjoint="Joint1" min="-360" max="360" /> 
+	<PosLimit refjoint="Joint2" min="-360" max="360" /> 
+	<PosLimit refjoint="Joint3" min="-360" max="360" /> 
+	<PosLimit refjoint="Joint4" min="-360" max="360" /> 
+	<PosLimit refjoint="Joint5" min="-360" max="360" /> 
+
+
+
+
+
+
+
+<!--
+ <PosLimit refjoint="Joint0" min="-120" max="80" />
+ <PosLimit refjoint="Joint1" min="-180" max="45" />
+ <PosLimit refjoint="Joint2" min="-45" max="180" />
+ <PosLimit refjoint="Joint3" min="-300" max="-20" /> 
+ <PosLimit refjoint="Joint4" min="-180" max="0" />
+ <PosLimit refjoint="Joint5" min="-180" max="180" />
+-->
+<!--
+	<PosLimit refjoint="Joint0" min="34.3775" max="229.183" />
+	<PosLimit refjoint="Joint1" min="-143.239" max="85.9437" /> 
+	<PosLimit refjoint="Joint2" min="-143.239" max="171.887" /> 
+	<PosLimit refjoint="Joint3" min="-257.831" max="0" /> 
+	<PosLimit refjoint="Joint4" min="-229.183" max="57.2958" /> 
+	<PosLimit refjoint="Joint5" min="-143.239" max="143.239" /> 
+-->
+
+<!-- 
+ <VelLimit refjoint="Joint0" max="90" />
+ <VelLimit refjoint="Joint1" max="90" />
+ <VelLimit refjoint="Joint2" max="90" />
+ <VelLimit refjoint="Joint3" max="90" /> 
+ <VelLimit refjoint="Joint4" max="90" />
+ <VelLimit refjoint="Joint5" max="90" />
+
+ <AccLimit refjoint="Joint0" max="573" />
+ <AccLimit refjoint="Joint1" max="573" />
+ <AccLimit refjoint="Joint2" max="573" />
+ <AccLimit refjoint="Joint3" max="573" /> 
+ <AccLimit refjoint="Joint4" max="573" />
+ <AccLimit refjoint="Joint5" max="573" />
+
+ <VelLimit refjoint="Joint0" max="180" />
+ <VelLimit refjoint="Joint1" max="180" />
+ <VelLimit refjoint="Joint2" max="180" />
+ <VelLimit refjoint="Joint3" max="180" /> 
+ <VelLimit refjoint="Joint4" max="180" />
+ <VelLimit refjoint="Joint5" max="180" />
+
+ <AccLimit refjoint="Joint0" max="1000" />
+ <AccLimit refjoint="Joint1" max="1000" />
+ <AccLimit refjoint="Joint2" max="1000" />
+ <AccLimit refjoint="Joint3" max="1000" /> 
+ <AccLimit refjoint="Joint4" max="1000" />
+ <AccLimit refjoint="Joint5" max="1000" />
+-->
+ <VelLimit refjoint="Joint0" max="180" />
+ <VelLimit refjoint="Joint1" max="180" />
+ <VelLimit refjoint="Joint2" max="180" />
+ <VelLimit refjoint="Joint3" max="180" /> 
+ <VelLimit refjoint="Joint4" max="180" />
+ <VelLimit refjoint="Joint5" max="180" />
+
+ <AccLimit refjoint="Joint0" max="360" />
+ <AccLimit refjoint="Joint1" max="360" />
+ <AccLimit refjoint="Joint2" max="360" />
+ <AccLimit refjoint="Joint3" max="360" /> 
+ <AccLimit refjoint="Joint4" max="360" />
+ <AccLimit refjoint="Joint5" max="360" />
+
+<Drawable name="flangeGeo1" refframe="Base">
+  	<RPY> 0 90 180</RPY> <Pos> 0 0 0.003</Pos>
+ </Drawable>
+<Drawable name="flangeGeo2" refframe="Base">
+  	<RPY> 0 90 180</RPY> <Pos> 0 0 0.0030</Pos>
+  	<Polytope file="geometry/base" />
+ </Drawable>
+ <Drawable name="Joint0Geo" refframe="Joint0">
+  	<RPY> 180 90 0</RPY> <Pos> 0 0 0.003</Pos>
+  	<Polytope file="geometry/joint0" />
+ </Drawable>
+ <Drawable name="Joint1Geo" refframe="Joint1">
+	<RPY> 0 0 90 </RPY> <Pos> 0.08620 0 0</Pos>
+  	<Polytope file="geometry/joint1" />
+ </Drawable>
+ <Drawable name="Joint2Geo" refframe="Joint2">
+	<RPY>0 0 90 </RPY> <Pos> 0.5112 0 0</Pos>
+  	<Polytope file="geometry/joint2" />
+ </Drawable>
+ <Drawable name="Joint3Geo" refframe="Joint3">
+  	<RPY> 90 0 90 </RPY> <Pos> 0 0.90363 0</Pos>
+  	<Polytope file="geometry/joint3" />
+ </Drawable>
+ 
+ <Drawable name="Joint4Geo" refframe="Joint4">
+  	<RPY> 0 90 0 </RPY> <Pos> 0 -0.109 -0.90363</Pos> 
+  	<Polytope file="geometry/joint4" /> 
+ </Drawable>
+
+  <Drawable name="Joint5Geo" refframe="Joint5" >
+	<RPY> 90 0 90</RPY> <Pos>0 0.99663 -0.109</Pos>
+	<Polytope file="geometry/joint5" /> 
+ </Drawable>
+
+ <ProximitySetup file="ProximitySetup.xml"/>
