@@ -81,7 +81,7 @@ void SamplePlugin::btnPressed() {
 		if (!_stateTimer->isActive())
 		{
 			cout<<"starting playback"<<endl;
-            _stateTimer->start(100); // run 10 Hz
+            _stateTimer->start(50); // ms
             _step = 0;
         }
         else
@@ -94,12 +94,12 @@ void SamplePlugin::btnPressed() {
 	if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		analyse_reachability(getRobWorkStudio(), globals::wc, globals::device, globals::target, globals::detector);
+		analyse_reachability(globals::wc, globals::device, globals::target, globals::detector);
 	}
 	if(obj == _btn_reach_all)
 	{
 		cout<<"reach all"<<endl;
-		analyse_reachability(getRobWorkStudio(), globals::wc, globals::device, globals::target, globals::detector, true);
+		analyse_reachability(globals::wc, globals::device, globals::target, globals::detector, true);
 	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
@@ -121,7 +121,7 @@ void SamplePlugin::btnPressed() {
         log().info() << "Button 1\n";
         // Toggle the timer on and off
         if (!_timer->isActive()){
-            _timer->start(100); // run 10 Hz
+            _timer->start(100); // ms
             _step = 0;
         }
         else
@@ -141,8 +141,10 @@ void SamplePlugin::btnPressed() {
 }
 
 
-void SamplePlugin::get25DImage() {
-	if (globals::framegrabber25D != NULL) {
+void SamplePlugin::get25DImage()
+{
+	if (globals::framegrabber25D != NULL)
+	{
 		for( int i = 0; i < globals::cameras25D.size(); i ++)
 		{
 			// Get the image as a RW image
@@ -173,8 +175,10 @@ void SamplePlugin::get25DImage() {
 	}
 }
 
-void SamplePlugin::getImage() {
-	if (globals::framegrabber != NULL) {
+void SamplePlugin::getImage()
+{
+	if (globals::framegrabber != NULL)
+	{
 		for( int i = 0; i < globals::cameras.size(); i ++)
 		{
 			// Get the image as a RW image
@@ -203,8 +207,10 @@ void SamplePlugin::getImage() {
 	}
 }
 
-void SamplePlugin::timer() {
-    if(0 <= _step && _step < globals::path.size()){
+void SamplePlugin::timer()
+{
+    if(0 <= _step && _step < globals::path.size())
+	{
         globals::device->setQ(globals::path.at(_step),globals::state);
         getRobWorkStudio()->setState(globals::state);
         _step++;
@@ -216,8 +222,10 @@ void SamplePlugin::timer() {
 	
 }
 
-void SamplePlugin::stateTimer() {
-    if(0 <= _step && _step < globals::states.size()){
+void SamplePlugin::stateTimer()
+{
+    if(0 <= _step && _step < globals::states.size())
+	{
         getRobWorkStudio()->setState(globals::states[_step]);
         _step++;
     }
@@ -229,11 +237,13 @@ void SamplePlugin::stateTimer() {
 	
 }
 
-void SamplePlugin::stateChangedListener(const State& state) {
+void SamplePlugin::stateChangedListener(const State& state)
+{
   globals::state = state;
 }
 
-bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q) {
+bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q)
+{
     State testState;
     CollisionDetector::QueryResult data;
     bool colFrom;
@@ -253,7 +263,8 @@ bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const
     return true;
 }
 
-void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double maxTime){
+void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double maxTime)
+{
     globals::device->setQ(from,globals::state);
     getRobWorkStudio()->setState(globals::state);
     CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());

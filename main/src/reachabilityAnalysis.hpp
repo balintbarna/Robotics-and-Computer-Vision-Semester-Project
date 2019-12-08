@@ -21,7 +21,7 @@ using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
 
 
-vector<Q> getConfigurations(Frame::Ptr frameGoal, const string nameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State state)
+vector<Q> getConfigurations(Frame::Ptr frameGoal, const string &nameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State state)
 {
     // Get, make and print name of frames
     const string robotName = robot->getName();
@@ -51,7 +51,42 @@ vector<Q> getConfigurations(Frame::Ptr frameGoal, const string nameTcp, SerialDe
     return closedFormSovler->solve(targetAt, state);
 }
 
-int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector, bool all)
+void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+{
+	auto tpos = target->getTransform(state).P();
+	// for every degree around the roll axis
+	for(double rollAngle=0; rollAngle<360.0; rollAngle+=1.0)
+	{
+		cout<<"Checking angle:"<<rollAngle<<endl;
+		target->moveTo(
+				Transform3D<>(
+						tpos,
+						// RPY<>(rollAngle*Deg2Rad,0,0) // original
+						// RPY<>(0,rollAngle*Deg2Rad,0) // from side
+						RPY<>(0,rollAngle*Deg2Rad,90*Deg2Rad) // from upwards
+						)
+				, state);
+
+		vector<Q> solutions = getConfigurations(target, "GraspTCP", robot, wc, state);
+		for(auto &sol : solutions)
+		{
+			if(all)
+				globals::states.push_back(state);
+
+			robot->setQ(sol, state);
+			// set the robot in that configuration and check if it is in collision
+			if( !detector->inCollision(state,NULL,true) ){
+				if(all == false)
+					globals::states.push_back(state);
+
+				states.push_back(state); // save it
+				break; // we only need one
+			}
+		}
+	}
+}
+
+int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector, bool all)
 {
 	//load workcell
 	if(NULL==wc){
@@ -72,51 +107,25 @@ int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDev
 
 	// get the default state
 	State state = wc->getDefaultState();
-	vector<Q> collisionFreeSolutions;
-	globals::states.clear();
-
 	globals::gripper->setQ(Q(1, 0.045), state);
 
-	for(double rollAngle=0; rollAngle<360.0; rollAngle+=1.0){ // for every degree around the roll axis
-		cout<<"Checking angle:"<<rollAngle<<endl;
-		target->moveTo(
-				Transform3D<>(
-						Vector3D<>(target->getTransform(state).P()),
-						// RPY<>(rollAngle*Deg2Rad,0,0) // original
-						// RPY<>(0,rollAngle*Deg2Rad,0) // from side
-						RPY<>(0,rollAngle*Deg2Rad,90*Deg2Rad) // from upwards
-						)
-				, state);
+	globals::states.clear();
+	vector<State> collisionFreeStates;
 
-		vector<Q> solutions = getConfigurations(target, "GraspTCP", robot, wc, state);
-		for(auto &sol : solutions)
-		{
-			if(all)
-				globals::states.push_back(state);
+	check_target(wc,robot,target,detector,collisionFreeStates, state, all);
+	
 
-			robot->setQ(sol, state);
-			// set the robot in that configuration and check if it is in collision
-			if( !detector->inCollision(state,NULL,true) ){
-				if(all == false)
-					globals::states.push_back(state);
-
-				collisionFreeSolutions.push_back(sol); // save it
-				break; // we only need one
-			}
-		}
-	}
-
-	 cout << "Current position of the robot vs object to be grasped has: "
-			   << collisionFreeSolutions.size()
-			   << " collision-free inverse kinematics solutions!" << endl;
+	cout << "Current position of the robot vs object to be grasped has: "
+		 << collisionFreeStates.size()
+		 << " collision-free inverse kinematics solutions!" << endl;
 
 
 	return 0;
 }
 
-int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector)
+int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector)
 {
-	analyse_reachability(studio, wc, robot, target, detector, false);
+	analyse_reachability(wc, robot, target, detector, false);
 }
 
 #endif /*REACH_HPP*/
