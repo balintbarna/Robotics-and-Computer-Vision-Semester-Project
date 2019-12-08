@@ -95,6 +95,7 @@ void SamplePlugin::btnPressed() {
 		cout<<"resetting playback"<<endl;
 		_stateTimer->stop();
 		_step = 0;
+		getRobWorkStudio()->setState(globals::states[_step]);
 	}
 	if(obj == _btn_reach)
 	{
@@ -141,8 +142,24 @@ void SamplePlugin::btnPressed() {
 	else if( obj==_btn_scan ){
 		get25DImage();
 	}
-	
-	
+}
+
+void SamplePlugin::stateTimer()
+{
+	auto s = globals::states.size();
+    if(0 <= _step && _step < s)
+	{
+		_slider->setMaximum(s);
+		_slider->setValue(_step);
+        getRobWorkStudio()->setState(globals::states[_step]);
+        _step++;
+    }
+	else
+	{
+		cout<<"finished playback"<<endl;
+		_stateTimer->stop();
+		_step = 0;
+	}
 }
 
 
@@ -223,22 +240,6 @@ void SamplePlugin::timer()
 	else
 	{
 		_timer->stop();
-	}
-	
-}
-
-void SamplePlugin::stateTimer()
-{
-    if(0 <= _step && _step < globals::states.size())
-	{
-        getRobWorkStudio()->setState(globals::states[_step]);
-        _step++;
-    }
-	else
-	{
-		cout<<"finished playback"<<endl;
-		_stateTimer->stop();
-		_step = 0;
 	}
 	
 }
