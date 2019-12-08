@@ -17,10 +17,24 @@
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+       <widget class="QPushButton" name="_btn_state_playback">
+        <property name="text">
+         <string>State playback</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QPushButton" name="_btn_reach">
         <property name="text">
          <string>Reachability</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="_btn_reach_all">
+        <property name="text">
+         <string>Reachability All</string>
         </property>
        </widget>
       </item>
