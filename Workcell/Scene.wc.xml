@@ -45,7 +45,7 @@
     	<RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
     	<Drawable name="Dog" refframe="Dog">
 			<RGB>1.0 1.0 1.0</RGB>
-        	<Polytope file="parts/dog_stl3" />
+        	<Polytope file="parts/dog" />
     	</Drawable>
 	</Frame>
 
