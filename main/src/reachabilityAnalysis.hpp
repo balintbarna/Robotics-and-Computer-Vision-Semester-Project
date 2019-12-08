@@ -51,42 +51,63 @@ vector<Q> getConfigurations(Frame::Ptr frameGoal, const string &nameTcp, SerialD
     return closedFormSovler->solve(targetAt, state);
 }
 
-void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+void check_solutions(vector<Q> solutions, SerialDevice::Ptr robot, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
 {
-	auto tpos = target->getTransform(state).P();
-	// for every degree around the roll axis
-	for(double rollAngle=0; rollAngle<360.0; rollAngle+=1.0)
+	for(auto &sol : solutions)
 	{
-		cout<<"Checking angle:"<<rollAngle<<endl;
-		target->moveTo(
-				Transform3D<>(
-						tpos,
-						// RPY<>(rollAngle*Deg2Rad,0,0) // original
-						// RPY<>(0,rollAngle*Deg2Rad,0) // from side
-						RPY<>(0,rollAngle*Deg2Rad,90*Deg2Rad) // from upwards
-						)
-				, state);
+		if(all)
+			globals::states.push_back(state);
 
-		vector<Q> solutions = getConfigurations(target, "GraspTCP", robot, wc, state);
-		for(auto &sol : solutions)
-		{
-			if(all)
+		robot->setQ(sol, state);
+		// set the robot in that configuration and check if it is in collision
+		if( !detector->inCollision(state,NULL,true) ){
+			if(all == false)
 				globals::states.push_back(state);
 
-			robot->setQ(sol, state);
-			// set the robot in that configuration and check if it is in collision
-			if( !detector->inCollision(state,NULL,true) ){
-				if(all == false)
-					globals::states.push_back(state);
-
-				states.push_back(state); // save it
-				break; // we only need one
-			}
+			states.push_back(state); // save it
+			break; // we only need one
 		}
 	}
 }
 
-int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector, bool all)
+void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+{
+	auto tpos = targetUp->getTransform(state).P();
+	// for every degree around the roll axis
+	for(double angle=0; angle<360.0; angle+=1.0)
+	{
+		cout<<"Checking angle:"<<angle<<endl;
+		targetUp->moveTo(
+				Transform3D<>(
+						tpos,
+						// RPY<>(angle*Deg2Rad,0,0) // original
+						// RPY<>(0,angle*Deg2Rad,0) // from side
+						RPY<>(0,angle*Deg2Rad,90*Deg2Rad) // from upwards
+						)
+				, state);
+
+		vector<Q> solutions = getConfigurations(targetUp, "GraspTCP", robot, wc, state);
+		check_solutions(solutions, robot, detector, states, state, all);
+	}
+	tpos = targetSide->getTransform(state).P();
+	for(double angle=0; angle<360.0; angle+=1.0)
+	{
+		cout<<"Checking angle:"<<angle<<endl;
+		targetSide->moveTo(
+				Transform3D<>(
+						tpos,
+						// RPY<>(angle*Deg2Rad,0,0) // original
+						RPY<>(0,angle*Deg2Rad,0) // from side
+						// RPY<>(0,angle*Deg2Rad,90*Deg2Rad) // from upwards
+						)
+				, state);
+
+		vector<Q> solutions = getConfigurations(targetSide, "GraspTCP", robot, wc, state);
+		check_solutions(solutions, robot, detector, states, state, all);
+	}
+}
+
+int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, bool all, MovableFrame::Ptr goal)
 {
 	//load workcell
 	if(NULL==wc){
@@ -95,8 +116,12 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	}
 
 	// find relevant frames
-	if(NULL==target){
-		RW_THROW("COULD not find movable frame Cylinder ... check model");
+	if(NULL==targetUp){
+		RW_THROW("COULD not find movable frame targetUp ... check model");
+		return -1;
+	}
+	if(NULL==targetSide){
+		RW_THROW("COULD not find movable frame targetSide ... check model");
 		return -1;
 	}
 
@@ -112,7 +137,11 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	globals::states.clear();
 	vector<State> collisionFreeStates;
 
-	check_target(wc,robot,target,detector,collisionFreeStates, state, all);
+	check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state, all);
+	if(goal != NULL)
+	{
+		check_target(wc,robot,goal,goal,detector,collisionFreeStates, state, all);
+	}
 	
 
 	cout << "Current position of the robot vs object to be grasped has: "
@@ -121,11 +150,6 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 
 
 	return 0;
-}
-
-int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector)
-{
-	analyse_reachability(wc, robot, target, detector, false);
 }
 
 #endif /*REACH_HPP*/
