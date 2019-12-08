@@ -49,11 +49,9 @@ vector<Q> getConfigurations(Frame::Ptr frameGoal, const string nameTcp, SerialDe
 
     ClosedFormIKSolverUR::Ptr closedFormSovler = ownedPtr( new ClosedFormIKSolverUR(robot, state) );
     return closedFormSovler->solve(targetAt, state);
-
-
 }
 
-int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector)
+int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector, bool all)
 {
 	//load workcell
 	if(NULL==wc){
@@ -75,7 +73,9 @@ int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDev
 	// get the default state
 	State state = wc->getDefaultState();
 	vector<Q> collisionFreeSolutions;
-	globals::path.clear();
+	globals::states.clear();
+
+	globals::gripper->setQ(Q(1, 0.045), state);
 
 	for(double rollAngle=0; rollAngle<360.0; rollAngle+=1.0){ // for every degree around the roll axis
 		cout<<"Checking angle:"<<rollAngle<<endl;
@@ -83,18 +83,23 @@ int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDev
 				Transform3D<>(
 						Vector3D<>(target->getTransform(state).P()),
 						// RPY<>(rollAngle*Deg2Rad,0,0) // original
-						RPY<>(0,rollAngle*Deg2Rad,0) // from side
-						// RPY<>(0,rollAngle*Deg2Rad,90*Deg2Rad) // from upwards
+						// RPY<>(0,rollAngle*Deg2Rad,0) // from side
+						RPY<>(0,rollAngle*Deg2Rad,90*Deg2Rad) // from upwards
 						)
 				, state);
 
 		vector<Q> solutions = getConfigurations(target, "GraspTCP", robot, wc, state);
 		for(auto &sol : solutions)
 		{
-			globals::path.push_back(sol);
+			if(all)
+				globals::states.push_back(state);
+
 			robot->setQ(sol, state);
 			// set the robot in that configuration and check if it is in collision
 			if( !detector->inCollision(state,NULL,true) ){
+				if(all == false)
+					globals::states.push_back(state);
+
 				collisionFreeSolutions.push_back(sol); // save it
 				break; // we only need one
 			}
@@ -109,6 +114,9 @@ int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDev
 	return 0;
 }
 
-
+int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr target, CollisionDetector::Ptr detector)
+{
+	analyse_reachability(studio, wc, robot, target, detector, false);
+}
 
 #endif /*REACH_HPP*/

@@ -10,10 +10,14 @@ SamplePlugin::SamplePlugin():
 	setupUi(this);
 
 	_timer = new QTimer(this);
+	_stateTimer = new QTimer(this);
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
+    connect(_stateTimer, SIGNAL(timeout()), this, SLOT(stateTimer()));
 
 	// now connect stuff from the ui component
 	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_reach_all    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_state_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn0    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
@@ -40,68 +44,16 @@ void SamplePlugin::initialize() {
 	// Auto load workcell
     WorkCell::Ptr wc = WorkCellLoader::Factory::load("/home/student/Workspace/RoVi_project/Workcell/Scene.wc.xml");
 	getRobWorkStudio()->setWorkCell(wc);
-
 }
 
 void SamplePlugin::open(WorkCell* workcell)
 {
     log().info() << "OPEN" << "\n";
-    globals::wc = workcell;
-    globals::state = globals::wc->getDefaultState();
+	globals::init(workcell, this);
 
     log().info() << workcell->getFilename() << "\n";
 
-    if (globals::wc != NULL) {
-	// Add the texture render to this workcell if there is a frame for texture
-	Frame* textureFrame = globals::wc->findFrame("MarkerTexture");
-	if (textureFrame != NULL) {
-		getRobWorkStudio()->getWorkCellScene()->addRender("TextureImage",globals::textureRender,textureFrame);
-	}
-	// Add the background render to this workcell if there is a frame for texture
-	Frame* bgFrame = globals::wc->findFrame("Background");
-	if (bgFrame != NULL) {
-		getRobWorkStudio()->getWorkCellScene()->addRender("BackgroundImage",globals::bgRender,bgFrame);
-	}
-
-	// Create a GLFrameGrabber if there is a camera frame with a Camera property set
-	Frame* cameraFrame = globals::wc->findFrame(globals::cameras[0]);
-	if (cameraFrame != NULL) {
-		if (cameraFrame->getPropertyMap().has("Camera")) {
-			// Read the dimensions and field of view
-			double fovy;
-			int width,height;
-			std::string camParam = cameraFrame->getPropertyMap().get<std::string>("Camera");
-			std::istringstream iss (camParam, std::istringstream::in);
-			iss >> fovy >> width >> height;
-			// Create a frame grabber
-			globals::framegrabber = new GLFrameGrabber(width,height,fovy);
-			SceneViewer::Ptr gldrawer = getRobWorkStudio()->getView()->getSceneViewer();
-			globals::framegrabber->init(gldrawer);
-		}
-	}
-	
-	Frame* cameraFrame25D = globals::wc->findFrame(globals::cameras25D[0]);
-	if (cameraFrame25D != NULL) {
-		if (cameraFrame25D->getPropertyMap().has("Scanner25D")) {
-			// Read the dimensions and field of view
-			double fovy;
-			int width,height;
-			std::string camParam = cameraFrame25D->getPropertyMap().get<std::string>("Scanner25D");
-			std::istringstream iss (camParam, std::istringstream::in);
-			iss >> fovy >> width >> height;
-			// Create a frame grabber
-			globals::framegrabber25D = new GLFrameGrabber25D(width,height,fovy);
-			SceneViewer::Ptr gldrawer = getRobWorkStudio()->getView()->getSceneViewer();
-			globals::framegrabber25D->init(gldrawer);
-		}
-	}
-
-    globals::device = globals::wc->findDevice<SerialDevice>("UR-6-85-5-A");
     _step = -1;
-	globals::detector = ownedPtr(new CollisionDetector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy()));
-	globals::dog = globals::wc->findFrame<MovableFrame>("Dog");
-	globals::target = globals::wc->findFrame<MovableFrame>("Target");
-    }
 }
 
 
@@ -110,22 +62,9 @@ void SamplePlugin::close() {
 
     // Stop the timer
     _timer->stop();
+	_stateTimer->stop();
     // Remove the texture render
-	Frame* textureFrame = globals::wc->findFrame("MarkerTexture");
-	if (textureFrame != NULL) {
-		getRobWorkStudio()->getWorkCellScene()->removeDrawable("TextureImage",textureFrame);
-	}
-	// Remove the background render
-	Frame* bgFrame = globals::wc->findFrame("Background");
-	if (bgFrame != NULL) {
-		getRobWorkStudio()->getWorkCellScene()->removeDrawable("BackgroundImage",bgFrame);
-	}
-	// Delete the old framegrabber
-	if (globals::framegrabber != NULL) {
-		delete globals::framegrabber;
-	}
-	globals::framegrabber = NULL;
-	globals::wc = NULL;
+	globals::close(this);
 }
 
 Mat SamplePlugin::toOpenCVImage(const Image& img) {
@@ -137,16 +76,29 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 
 void SamplePlugin::btnPressed() {
     QObject *obj = sender();
+	if(obj == _btn_state_playback)
+	{
+		cout<<"playback"<<endl;
+		if (!_stateTimer->isActive())
+		{
+            _stateTimer->start(100); // run 10 Hz
+            _step = 0;
+        }
+        else
+		{
+			_stateTimer->stop();
+            _step = 0;
+		}
+	}
 	if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
 		analyse_reachability(getRobWorkStudio(), globals::wc, globals::device, globals::target, globals::detector);
-		if (!_timer->isActive()){
-            _timer->start(100); // run 10 Hz
-            _step = 0;
-        }
-        else
-            _step = 0;
+	}
+	if(obj == _btn_reach_all)
+	{
+		cout<<"reach"<<endl;
+		analyse_reachability(getRobWorkStudio(), globals::wc, globals::device, globals::target, globals::detector, true);
 	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
@@ -259,6 +211,18 @@ void SamplePlugin::timer() {
 	else
 	{
 		_timer->stop();
+	}
+	
+}
+
+void SamplePlugin::stateTimer() {
+    if(0 <= _step && _step < globals::states.size()){
+        getRobWorkStudio()->setState(globals::states[_step]);
+        _step++;
+    }
+	else
+	{
+		_stateTimer->stop();
 	}
 	
 }

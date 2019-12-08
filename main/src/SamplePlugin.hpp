@@ -80,6 +80,7 @@ public:
 private slots:
     void btnPressed();
     void timer();
+    void stateTimer();
     void getImage();
     void get25DImage();
   
@@ -92,6 +93,7 @@ private:
     static cv::Mat toOpenCVImage(const rw::sensor::Image& img);
 
     QTimer* _timer;
+    QTimer* _stateTimer;
     QTimer* _timer25D;
     int _step;
 };
