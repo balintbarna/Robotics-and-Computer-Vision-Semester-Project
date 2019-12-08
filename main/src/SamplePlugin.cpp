@@ -108,7 +108,7 @@ void SamplePlugin::btnPressed() {
 		if (!_stateTimer->isActive())
 		{
 			cout<<"starting playback"<<endl;
-            _stateTimer->start(50); // ms
+            _stateTimer->start(25); // ms
         }
         else
 		{
@@ -121,17 +121,13 @@ void SamplePlugin::btnPressed() {
 		cout<<"resetting playback"<<endl;
 		_stateTimer->stop();
 		_step = 0;
-		getRobWorkStudio()->setState(globals::states[_step]);
+		_slider->setValue(_step);
+		updatePlaybackState();
 	}
 	if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, false, globals::goal);
-	}
-	if(obj == _btn_reach_all)
-	{
-		cout<<"reach all"<<endl;
-		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, true, globals::goal);
+		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
 	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
@@ -175,7 +171,7 @@ void SamplePlugin::stateTimer()
 	auto s = globals::states.size();
     if(0 <= _step && _step < s)
 	{
-		_slider->setMaximum(s);
+		_slider->setMaximum(s - 1);
 		_slider->setValue(_step);
 		updatePlaybackState();
         _step++;

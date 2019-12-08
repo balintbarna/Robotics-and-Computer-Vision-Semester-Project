@@ -46,6 +46,9 @@
        </widget>
       </item>
       <item>
+       <widget class="QSpinBox" name="_spinBox"/>
+      </item>
+      <item>
        <widget class="QPushButton" name="_btn_reach_all">
         <property name="text">
          <string>Reachability All</string>
@@ -79,9 +82,6 @@
          <string>Run Path</string>
         </property>
        </widget>
-      </item>
-      <item>
-       <widget class="QSpinBox" name="_spinBox"/>
       </item>
       <item>
        <widget class="QLabel" name="_label">

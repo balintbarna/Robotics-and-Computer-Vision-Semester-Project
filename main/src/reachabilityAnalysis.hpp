@@ -52,7 +52,7 @@ vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDev
     return closedFormSovler->solve(targetAt, state);
 }
 
-void check_solutions(vector<Q> &solutions, SerialDevice::Ptr robot, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+void check_solutions(vector<Q> &solutions, SerialDevice::Ptr robot, CollisionDetector::Ptr detector, vector<State> &states, State &state)
 {
 	for(auto &sol : solutions)
 	{
@@ -65,7 +65,7 @@ void check_solutions(vector<Q> &solutions, SerialDevice::Ptr robot, CollisionDet
 	}
 }
 
-void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, vector<State> &states, State &state)
 {
 	globals::target->attachTo(targetUp.get(), state);
 	Vector3D<double> zeroPos(0, 0, 0);
@@ -82,7 +82,7 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 				, state);
 
 		vector<Q> solutions = getConfigurations(globals::target, globals::graspTcp, robot, wc, state);
-		check_solutions(solutions, robot, detector, states, state, all);
+		check_solutions(solutions, robot, detector, states, state);
 	}
 	globals::target->attachTo(targetSide.get(), state);
 	for(double angle=0; angle<360.0; angle+=1.0)
@@ -97,11 +97,11 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 				, state);
 
 		vector<Q> solutions = getConfigurations(globals::target, globals::graspTcp, robot, wc, state);
-		check_solutions(solutions, robot, detector, states, state, all);
+		check_solutions(solutions, robot, detector, states, state);
 	}
 }
 
-int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, bool all, MovableFrame::Ptr goal)
+int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, MovableFrame::Ptr goal, int num_pos)
 {
 	//load workcell
 	if(NULL==wc){
@@ -136,7 +136,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	auto robRef = globals::robotRef;
 	auto startPos = robRef->getTransform(state).P();
 	auto startRot = robRef->getTransform(state).R();
-	for(int i = 0; i < 2; i++)
+	for(int i = 0; i < num_pos; i++)
 	{
 		// move robot to random pos
 		if(i > 0)
@@ -151,10 +151,10 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 
 		// do checks in that pose
 		vector<State> collisionFreeStates;
-		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state, all);
+		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state);
 		if(goal != NULL)
 		{
-			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state, all);
+			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state);
 		}
 		if(collisionFreeStates.size() > bestStates.size())
 		{
