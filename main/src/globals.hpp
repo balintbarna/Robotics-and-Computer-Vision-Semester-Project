@@ -67,6 +67,8 @@ namespace globals
     CollisionDetector::Ptr detector;
     MovableFrame::Ptr dog;
     MovableFrame::Ptr target;
+    MovableFrame::Ptr doghead;
+    MovableFrame::Ptr goal;
     vector<State> states;
 
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)
@@ -132,6 +134,8 @@ namespace globals
             detector = ownedPtr(new CollisionDetector(wc, ProximityStrategyFactory::makeDefaultCollisionStrategy()));
             dog = wc->findFrame<MovableFrame>("Dog");
             target = wc->findFrame<MovableFrame>("Target");
+            doghead = wc->findFrame<MovableFrame>("DogHead");
+            goal = wc->findFrame<MovableFrame>("Goal");
         }
     }
 
@@ -155,6 +159,11 @@ namespace globals
             delete framegrabber;
         }
         framegrabber = NULL;
+        if (framegrabber25D != NULL)
+        {
+            delete framegrabber25D;
+        }
+        framegrabber25D = NULL;
         wc = NULL;
     }
 }
