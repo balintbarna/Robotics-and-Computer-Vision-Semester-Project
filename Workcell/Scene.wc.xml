@@ -48,7 +48,7 @@
 	</Frame>
 
 	<Frame name="Target" refframe="Dog" type="Movable" daf="true" >
-		<RPY> 0 0 0 </RPY> <Pos> 0 0 0 </Pos>
+		<RPY> 0 0 0 </RPY> <Pos> 0 0.1 0 </Pos>
 	</Frame>
 
 <!-- Cameras -->
