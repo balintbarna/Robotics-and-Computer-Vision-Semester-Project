@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <string>
+#include <random>
+#include <time.h> 
 
 USE_ROBWORK_NAMESPACE
 using namespace std;
@@ -21,7 +23,7 @@ using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
 
 
-vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State state)
+vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State &state)
 {
     // Get, make and print name of frames
     const string robotName = robot->getName();
@@ -76,7 +78,6 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 	// for every degree around the roll axis
 	for(double angle=0; angle<360.0; angle+=1.0)
 	{
-		cout<<"Checking angle:"<<angle<<endl;
 		globals::target->moveTo(
 				Transform3D<>(
 						zeroPos,
@@ -92,7 +93,6 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 	globals::target->attachTo(targetSide.get(), state);
 	for(double angle=0; angle<360.0; angle+=1.0)
 	{
-		cout<<"Checking angle:"<<angle<<endl;
 		globals::target->moveTo(
 				Transform3D<>(
 						zeroPos,
@@ -137,10 +137,31 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	globals::states.clear();
 	vector<State> collisionFreeStates;
 
-	check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state, all);
-	if(goal != NULL)
+	// set up random seed
+	srand(time(NULL));
+	// look at 10 random base locations
+	auto robRef = globals::robotRef;
+	auto startPos = robRef->getTransform(state).P();
+	auto startRot = robRef->getTransform(state).R();
+	for(int i = 0; i < 3; i++)
 	{
-		check_target(wc,robot,goal,goal,detector,collisionFreeStates, state, all);
+		// move robot to random pos
+		if(i > 0)
+		{
+		double xdif = (rand() % 1000 - 500) / 1000.0;
+		double ydif = (rand() % 1000 - 500) / 1000.0;
+		robRef->moveTo(Transform3D<>(
+			Vector3D<double>(xdif, ydif, 0),
+			startRot),
+			state);
+		}
+
+		// do checks in that pose
+		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state, all);
+		if(goal != NULL)
+		{
+			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state, all);
+		}
 	}
 	
 

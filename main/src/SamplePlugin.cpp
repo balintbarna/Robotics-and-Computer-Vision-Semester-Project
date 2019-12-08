@@ -18,6 +18,7 @@ SamplePlugin::SamplePlugin():
 	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_reach_all    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_state_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_reset_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn0    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
@@ -82,24 +83,28 @@ void SamplePlugin::btnPressed() {
 		{
 			cout<<"starting playback"<<endl;
             _stateTimer->start(50); // ms
-            _step = 0;
         }
         else
 		{
 			cout<<"stopping playback"<<endl;
 			_stateTimer->stop();
-            _step = 0;
 		}
+	}
+	if(obj == _btn_reset_playback)
+	{
+		cout<<"resetting playback"<<endl;
+		_stateTimer->stop();
+		_step = 0;
 	}
 	if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		analyse_reachability(globals::wc, globals::device, globals::dogmiddle, globals::doghead, globals::detector, false, globals::goal);
+		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, false, globals::goal);
 	}
 	if(obj == _btn_reach_all)
 	{
 		cout<<"reach all"<<endl;
-		analyse_reachability(globals::wc, globals::device, globals::dogmiddle, globals::doghead, globals::detector, true, globals::goal);
+		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, true, globals::goal);
 	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
@@ -211,7 +216,7 @@ void SamplePlugin::timer()
 {
     if(0 <= _step && _step < globals::path.size())
 	{
-        globals::device->setQ(globals::path.at(_step),globals::state);
+        globals::robot->setQ(globals::path.at(_step),globals::state);
         getRobWorkStudio()->setState(globals::state);
         _step++;
     }
@@ -233,6 +238,7 @@ void SamplePlugin::stateTimer()
 	{
 		cout<<"finished playback"<<endl;
 		_stateTimer->stop();
+		_step = 0;
 	}
 	
 }
@@ -242,14 +248,14 @@ void SamplePlugin::stateChangedListener(const State& state)
   globals::state = state;
 }
 
-bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q)
+bool SamplePlugin::checkCollisions(Device::Ptr robot, const State &state, const CollisionDetector &detector, const Q &q)
 {
     State testState;
     CollisionDetector::QueryResult data;
     bool colFrom;
 
     testState = state;
-    device->setQ(q,testState);
+    robot->setQ(q,testState);
     colFrom = detector.inCollision(testState,&data);
     if (colFrom) {
         cerr << "Configuration in collision: " << q << endl;
@@ -265,18 +271,18 @@ bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const
 
 void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double maxTime)
 {
-    globals::device->setQ(from,globals::state);
+    globals::robot->setQ(from,globals::state);
     getRobWorkStudio()->setState(globals::state);
     CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
-    PlannerConstraint constraint = PlannerConstraint::make(&detector,globals::device,globals::state);
-    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(globals::device),constraint.getQConstraintPtr());
+    PlannerConstraint constraint = PlannerConstraint::make(&detector,globals::robot,globals::state);
+    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(globals::robot),constraint.getQConstraintPtr());
     QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
     QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
 
     globals::path.clear();
-    if (!checkCollisions(globals::device, globals::state, detector, from))
+    if (!checkCollisions(globals::robot, globals::state, detector, from))
         cout << from << " is in colission!" << endl;
-    if (!checkCollisions(globals::device, globals::state, detector, to))
+    if (!checkCollisions(globals::robot, globals::state, detector, to))
         cout << to << " is in colission!" << endl;;
     Timer t;
     t.resetAndResume();

@@ -61,7 +61,8 @@ namespace globals
     GLFrameGrabber25D* framegrabber25D;    
     vector<string> cameras;
     vector<string> cameras25D;
-    SerialDevice::Ptr device;
+    MovableFrame::Ptr robotRef;
+    SerialDevice::Ptr robot;
     TreeDevice::Ptr gripper;
     QPath path;
     CollisionDetector::Ptr detector;
@@ -131,7 +132,8 @@ namespace globals
                 }
             }
 
-            device = wc->findDevice<SerialDevice>("UR-6-85-5-A");
+            robotRef = wc->findFrame<MovableFrame>("URReference");
+            robot = wc->findDevice<SerialDevice>("UR-6-85-5-A");
             gripper = wc->findDevice<TreeDevice>("WSG50");
             detector = ownedPtr(new CollisionDetector(wc, ProximityStrategyFactory::makeDefaultCollisionStrategy()));
             target = wc->findFrame<MovableFrame>("GraspTarget");
