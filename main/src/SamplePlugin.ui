@@ -25,6 +25,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="_btn_reset_playback">
+        <property name="text">
+         <string>Reset playback</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="_btn_reach">
         <property name="text">
          <string>Reachability</string>
