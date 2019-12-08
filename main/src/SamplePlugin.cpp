@@ -1,5 +1,7 @@
 #include "SamplePlugin.hpp"
+#include "globals.hpp"
 #include "reachabilityAnalysis.hpp"
+
 
 
 SamplePlugin::SamplePlugin():
@@ -18,16 +20,16 @@ SamplePlugin::SamplePlugin():
 	connect(_btn1    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_spinBox  ,SIGNAL(valueChanged(int)), this, SLOT(btnPressed()) );
 
-	_framegrabber = NULL;
+	globals::framegrabber = NULL;
 	
-	_cameras = {"Camera_Right", "Camera_Left"};
-	_cameras25D = {"Scanner25D"};
+	globals::cameras = {"Camera_Right", "Camera_Left"};
+	globals::cameras25D = {"Scanner25D"};
 }
 
 SamplePlugin::~SamplePlugin()
 {
-    delete _textureRender;
-    delete _bgRender;
+    delete globals::textureRender;
+    delete globals::bgRender;
 }
 
 void SamplePlugin::initialize() {
@@ -44,25 +46,25 @@ void SamplePlugin::initialize() {
 void SamplePlugin::open(WorkCell* workcell)
 {
     log().info() << "OPEN" << "\n";
-    _wc = workcell;
-    _state = _wc->getDefaultState();
+    globals::wc = workcell;
+    globals::state = globals::wc->getDefaultState();
 
     log().info() << workcell->getFilename() << "\n";
 
-    if (_wc != NULL) {
+    if (globals::wc != NULL) {
 	// Add the texture render to this workcell if there is a frame for texture
-	Frame* textureFrame = _wc->findFrame("MarkerTexture");
+	Frame* textureFrame = globals::wc->findFrame("MarkerTexture");
 	if (textureFrame != NULL) {
-		getRobWorkStudio()->getWorkCellScene()->addRender("TextureImage",_textureRender,textureFrame);
+		getRobWorkStudio()->getWorkCellScene()->addRender("TextureImage",globals::textureRender,textureFrame);
 	}
 	// Add the background render to this workcell if there is a frame for texture
-	Frame* bgFrame = _wc->findFrame("Background");
+	Frame* bgFrame = globals::wc->findFrame("Background");
 	if (bgFrame != NULL) {
-		getRobWorkStudio()->getWorkCellScene()->addRender("BackgroundImage",_bgRender,bgFrame);
+		getRobWorkStudio()->getWorkCellScene()->addRender("BackgroundImage",globals::bgRender,bgFrame);
 	}
 
 	// Create a GLFrameGrabber if there is a camera frame with a Camera property set
-	Frame* cameraFrame = _wc->findFrame(_cameras[0]);
+	Frame* cameraFrame = globals::wc->findFrame(globals::cameras[0]);
 	if (cameraFrame != NULL) {
 		if (cameraFrame->getPropertyMap().has("Camera")) {
 			// Read the dimensions and field of view
@@ -72,13 +74,13 @@ void SamplePlugin::open(WorkCell* workcell)
 			std::istringstream iss (camParam, std::istringstream::in);
 			iss >> fovy >> width >> height;
 			// Create a frame grabber
-			_framegrabber = new GLFrameGrabber(width,height,fovy);
+			globals::framegrabber = new GLFrameGrabber(width,height,fovy);
 			SceneViewer::Ptr gldrawer = getRobWorkStudio()->getView()->getSceneViewer();
-			_framegrabber->init(gldrawer);
+			globals::framegrabber->init(gldrawer);
 		}
 	}
 	
-	Frame* cameraFrame25D = _wc->findFrame(_cameras25D[0]);
+	Frame* cameraFrame25D = globals::wc->findFrame(globals::cameras25D[0]);
 	if (cameraFrame25D != NULL) {
 		if (cameraFrame25D->getPropertyMap().has("Scanner25D")) {
 			// Read the dimensions and field of view
@@ -88,15 +90,17 @@ void SamplePlugin::open(WorkCell* workcell)
 			std::istringstream iss (camParam, std::istringstream::in);
 			iss >> fovy >> width >> height;
 			// Create a frame grabber
-			_framegrabber25D = new GLFrameGrabber25D(width,height,fovy);
+			globals::framegrabber25D = new GLFrameGrabber25D(width,height,fovy);
 			SceneViewer::Ptr gldrawer = getRobWorkStudio()->getView()->getSceneViewer();
-			_framegrabber25D->init(gldrawer);
+			globals::framegrabber25D->init(gldrawer);
 		}
 	}
 
-    _device = _wc->findDevice("UR-6-85-5-A");
+    globals::device = globals::wc->findDevice<SerialDevice>("UR-6-85-5-A");
     _step = -1;
-	
+	globals::detector = ownedPtr(new CollisionDetector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy()));
+	globals::dog = globals::wc->findFrame<MovableFrame>("Dog");
+	globals::target = globals::wc->findFrame<MovableFrame>("Target");
     }
 }
 
@@ -107,21 +111,21 @@ void SamplePlugin::close() {
     // Stop the timer
     _timer->stop();
     // Remove the texture render
-	Frame* textureFrame = _wc->findFrame("MarkerTexture");
+	Frame* textureFrame = globals::wc->findFrame("MarkerTexture");
 	if (textureFrame != NULL) {
 		getRobWorkStudio()->getWorkCellScene()->removeDrawable("TextureImage",textureFrame);
 	}
 	// Remove the background render
-	Frame* bgFrame = _wc->findFrame("Background");
+	Frame* bgFrame = globals::wc->findFrame("Background");
 	if (bgFrame != NULL) {
 		getRobWorkStudio()->getWorkCellScene()->removeDrawable("BackgroundImage",bgFrame);
 	}
 	// Delete the old framegrabber
-	if (_framegrabber != NULL) {
-		delete _framegrabber;
+	if (globals::framegrabber != NULL) {
+		delete globals::framegrabber;
 	}
-	_framegrabber = NULL;
-	_wc = NULL;
+	globals::framegrabber = NULL;
+	globals::wc = NULL;
 }
 
 Mat SamplePlugin::toOpenCVImage(const Image& img) {
@@ -136,6 +140,13 @@ void SamplePlugin::btnPressed() {
 	if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
+		analyse_reachability(getRobWorkStudio(), globals::wc, globals::device, globals::target, globals::detector);
+		if (!_timer->isActive()){
+            _timer->start(100); // run 10 Hz
+            _step = 0;
+        }
+        else
+            _step = 0;
 	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
@@ -178,18 +189,18 @@ void SamplePlugin::btnPressed() {
 
 
 void SamplePlugin::get25DImage() {
-	if (_framegrabber25D != NULL) {
-		for( int i = 0; i < _cameras25D.size(); i ++)
+	if (globals::framegrabber25D != NULL) {
+		for( int i = 0; i < globals::cameras25D.size(); i ++)
 		{
 			// Get the image as a RW image
-			Frame* cameraFrame25D = _wc->findFrame(_cameras25D[i]); // "Camera");
-			_framegrabber25D->grab(cameraFrame25D, _state);
+			Frame* cameraFrame25D = globals::wc->findFrame(globals::cameras25D[i]); // "Camera");
+			globals::framegrabber25D->grab(cameraFrame25D, globals::state);
 
 			//const Image& image = _framegrabber->getImage();
 
-			const rw::geometry::PointCloud* img = &(_framegrabber25D->getImage());
+			const rw::geometry::PointCloud* img = &(globals::framegrabber25D->getImage());
 
-			std::ofstream output(_cameras25D[i] + ".pcd");
+			std::ofstream output(globals::cameras25D[i] + ".pcd");
 			output << "# .PCD v.5 - Point Cloud Data file format\n";
 			output << "FIELDS x y z\n";
 			output << "SIZE 4 4 4\n";
@@ -210,14 +221,14 @@ void SamplePlugin::get25DImage() {
 }
 
 void SamplePlugin::getImage() {
-	if (_framegrabber != NULL) {
-		for( int i = 0; i < _cameras.size(); i ++)
+	if (globals::framegrabber != NULL) {
+		for( int i = 0; i < globals::cameras.size(); i ++)
 		{
 			// Get the image as a RW image
-			Frame* cameraFrame = _wc->findFrame(_cameras[i]); // "Camera");
-			_framegrabber->grab(cameraFrame, _state);
+			Frame* cameraFrame = globals::wc->findFrame(globals::cameras[i]); // "Camera");
+			globals::framegrabber->grab(cameraFrame, globals::state);
 
-			const rw::sensor::Image* rw_image = &(_framegrabber->getImage());
+			const rw::sensor::Image* rw_image = &(globals::framegrabber->getImage());
 
 			// Convert to OpenCV matrix.
 			cv::Mat image = cv::Mat(rw_image->getHeight(), rw_image->getWidth(), CV_8UC3, (rw::sensor::Image*)rw_image->getImageData());
@@ -227,7 +238,7 @@ void SamplePlugin::getImage() {
 			cv::flip(image, imflip, 1);
 			cv::cvtColor( imflip, imflip_mat, COLOR_RGB2BGR );
 
-			cv::imwrite(_cameras[i] + ".png", imflip_mat );
+			cv::imwrite(globals::cameras[i] + ".png", imflip_mat );
 
 			// Show in QLabel
 			QImage img(imflip.data, imflip.cols, imflip.rows, imflip.step, QImage::Format_RGB888);
@@ -240,17 +251,20 @@ void SamplePlugin::getImage() {
 }
 
 void SamplePlugin::timer() {
-
-
-    if(0 <= _step && _step < _path.size()){
-        _device->setQ(_path.at(_step),_state);
-        getRobWorkStudio()->setState(_state);
+    if(0 <= _step && _step < globals::path.size()){
+        globals::device->setQ(globals::path.at(_step),globals::state);
+        getRobWorkStudio()->setState(globals::state);
         _step++;
     }
+	else
+	{
+		_timer->stop();
+	}
+	
 }
 
 void SamplePlugin::stateChangedListener(const State& state) {
-  _state = state;
+  globals::state = state;
 }
 
 bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q) {
@@ -274,22 +288,22 @@ bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const
 }
 
 void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double maxTime){
-    _device->setQ(from,_state);
-    getRobWorkStudio()->setState(_state);
-    CollisionDetector detector(_wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
-    PlannerConstraint constraint = PlannerConstraint::make(&detector,_device,_state);
-    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(_device),constraint.getQConstraintPtr());
+    globals::device->setQ(from,globals::state);
+    getRobWorkStudio()->setState(globals::state);
+    CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
+    PlannerConstraint constraint = PlannerConstraint::make(&detector,globals::device,globals::state);
+    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(globals::device),constraint.getQConstraintPtr());
     QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
     QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
 
-    _path.clear();
-    if (!checkCollisions(_device, _state, detector, from))
+    globals::path.clear();
+    if (!checkCollisions(globals::device, globals::state, detector, from))
         cout << from << " is in colission!" << endl;
-    if (!checkCollisions(_device, _state, detector, to))
+    if (!checkCollisions(globals::device, globals::state, detector, to))
         cout << to << " is in colission!" << endl;;
     Timer t;
     t.resetAndResume();
-    planner->query(from,to,_path,maxTime);
+    planner->query(from,to,globals::path,maxTime);
     t.pause();
 
 
@@ -299,13 +313,13 @@ void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double max
 
 	const int duration = 10;
 
-    if(_path.size() == 2){  //The interpolated path between Q start and Q goal is collision free. Set the duration with respect to the desired velocity
+    if(globals::path.size() == 2){  //The interpolated path between Q start and Q goal is collision free. Set the duration with respect to the desired velocity
         LinearInterpolator<Q> linInt(from, to, duration);
         QPath tempQ;
         for(int i = 0; i < duration+1; i++){
             tempQ.push_back(linInt.x(i));
         }
 
-        _path=tempQ;
+        globals::path=tempQ;
     }
 }

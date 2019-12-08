@@ -93,18 +93,7 @@ private:
 
     QTimer* _timer;
     QTimer* _timer25D;
-    
-    rw::models::WorkCell::Ptr _wc;
-    rw::kinematics::State _state;
-    rwlibs::opengl::RenderImage *_textureRender, *_bgRender;
-    rwlibs::simulation::GLFrameGrabber* _framegrabber;
-    rwlibs::simulation::GLFrameGrabber25D* _framegrabber25D;    
-    std::vector<std::string> _cameras;
-    std::vector<std::string> _cameras25D;
-    Device::Ptr _device;
-    QPath _path;
     int _step;
-
 };
 
 #endif /*RINGONHOOKPLUGIN_HPP_*/
