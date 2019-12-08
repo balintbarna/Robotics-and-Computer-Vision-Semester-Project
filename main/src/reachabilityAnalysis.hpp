@@ -21,29 +21,27 @@ using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
 
 
-vector<Q> getConfigurations(const string nameGoal, const string nameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State state)
+vector<Q> getConfigurations(Frame::Ptr frameGoal, const string nameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State state)
 {
     // Get, make and print name of frames
     const string robotName = robot->getName();
-    const string nameRobotBase = robotName + "." + "Base";
     const string nameRobotTcp = robotName + "." + "TCP";
 
     // Find frames and check for existence
-    Frame* frameGoal = wc->findFrame(nameGoal);
     Frame* frameTcp = wc->findFrame(nameTcp);
-    Frame* frameRobotBase = wc->findFrame(nameRobotBase);
+    Frame* frameRobotBase = robot->getBase();
     Frame* frameRobotTcp = wc->findFrame(nameRobotTcp);
     if(frameGoal==NULL || frameTcp==NULL || frameRobotBase==NULL || frameRobotTcp==NULL)
     {
         cout << " ALL FRAMES NOT FOUND:" << endl;
-        cout << " Found \"" << nameGoal << "\": " << (frameGoal==NULL ? "NO!" : "YES!") << endl;
+        cout << " Found \"" << "goal" << "\": " << (frameGoal==NULL ? "NO!" : "YES!") << endl;
         cout << " Found \"" << nameTcp << "\": " << (frameTcp==NULL ? "NO!" : "YES!") << endl;
-        cout << " Found \"" << nameRobotBase << "\": " << (frameRobotBase==NULL ? "NO!" : "YES!") << endl;
+        cout << " Found \"" << "robot base" << "\": " << (frameRobotBase==NULL ? "NO!" : "YES!") << endl;
         cout << " Found \"" << nameRobotTcp << "\": " << (frameRobotTcp==NULL ? "NO!" : "YES!") << endl;
     }
 
     // Make "helper" transformations
-    Transform3D<> frameBaseTGoal = Kinematics::frameTframe(frameRobotBase, frameGoal, state);
+    Transform3D<> frameBaseTGoal = Kinematics::frameTframe(frameRobotBase, &(*frameGoal), state);
     Transform3D<> frameTcpTRobotTcp = Kinematics::frameTframe(frameTcp, frameRobotTcp, state);
 
     // get grasp frame in robot tool frame
@@ -85,17 +83,19 @@ int analyse_reachability(rws::RobWorkStudio *studio, WorkCell::Ptr wc, SerialDev
 				Transform3D<>(
 						Vector3D<>(target->getTransform(state).P()),
 						// RPY<>(rollAngle*Deg2Rad,0,0) // original
-						// RPY<>(rollAngle*Deg2Rad,0,0)
-						RPY<>(rollAngle*Deg2Rad,90*Deg2Rad,0) // from upwards
+						RPY<>(0,rollAngle*Deg2Rad,0) // from side
+						// RPY<>(0,rollAngle*Deg2Rad,90*Deg2Rad) // from upwards
 						)
 				, state);
 
-		vector<Q> solutions = getConfigurations("Dog", "GraspTCP", robot, wc, state);
-		for(unsigned int i=0; i<solutions.size(); i++){
-			globals::path.push_back(solutions[i]);
+		vector<Q> solutions = getConfigurations(target, "GraspTCP", robot, wc, state);
+		for(auto &sol : solutions)
+		{
+			globals::path.push_back(sol);
+			robot->setQ(sol, state);
 			// set the robot in that configuration and check if it is in collision
 			if( !detector->inCollision(state,NULL,true) ){
-				collisionFreeSolutions.push_back(solutions[i]); // save it
+				collisionFreeSolutions.push_back(sol); // save it
 				break; // we only need one
 			}
 		}
