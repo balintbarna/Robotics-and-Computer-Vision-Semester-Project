@@ -39,9 +39,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="_btn_reach">
+       <widget class="QLabel" name="_spinLabel">
         <property name="text">
-         <string>Reachability</string>
+         <string>Pos num to try</string>
         </property>
        </widget>
       </item>
@@ -49,9 +49,9 @@
        <widget class="QSpinBox" name="_spinBox"/>
       </item>
       <item>
-       <widget class="QPushButton" name="_btn_reach_all">
+       <widget class="QPushButton" name="_btn_reach">
         <property name="text">
-         <string>Reachability All</string>
+         <string>Reachability</string>
         </property>
        </widget>
       </item>

@@ -21,7 +21,6 @@ SamplePlugin::SamplePlugin():
 
 	// now connect stuff from the ui component
 	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_reach_all    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_state_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_reset_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
