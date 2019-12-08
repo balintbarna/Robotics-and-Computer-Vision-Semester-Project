@@ -14,7 +14,10 @@ SamplePlugin::SamplePlugin():
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
     connect(_stateTimer, SIGNAL(timeout()), this, SLOT(stateTimer()));
 
-	connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(onSlide()));
+	// connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderMoved()));
+	connect(_slider, SIGNAL(sliderMoved(int)), this, SLOT(onSliderMoved()));
+	connect(_slider, SIGNAL(sliderPressed()), this, SLOT(onSliderPressed()));
+	connect(_slider, SIGNAL(sliderReleased()), this, SLOT(onSliderReleased()));
 
 	// now connect stuff from the ui component
 	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
@@ -76,9 +79,26 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 	return res;
 }
 
-void SamplePlugin::onSlide()
+bool playbackWasOn = false;
+void SamplePlugin::onSliderMoved()
 {
+	cout<<"slider moved"<<endl;
 	_step = _slider->value();
+	updatePlaybackState();
+}
+void SamplePlugin::onSliderPressed()
+{
+	// cout<<"slider pressed"<<endl;
+	playbackWasOn = _stateTimer->isActive();
+	_stateTimer->stop();
+}
+void SamplePlugin::onSliderReleased()
+{
+	// cout<<"slider released"<<endl;
+	_step = _slider->value();
+	updatePlaybackState();
+	if (playbackWasOn)
+		_stateTimer->start();
 }
 
 void SamplePlugin::btnPressed() {
@@ -157,7 +177,7 @@ void SamplePlugin::stateTimer()
 	{
 		_slider->setMaximum(s);
 		_slider->setValue(_step);
-        getRobWorkStudio()->setState(globals::states[_step]);
+		updatePlaybackState();
         _step++;
     }
 	else
@@ -166,6 +186,11 @@ void SamplePlugin::stateTimer()
 		_stateTimer->stop();
 		_step = 0;
 	}
+}
+
+void SamplePlugin::updatePlaybackState()
+{
+	getRobWorkStudio()->setState(globals::states[_step]);
 }
 
 

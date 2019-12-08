@@ -79,11 +79,14 @@ public:
 
 private slots:
     void btnPressed();
-    void onSlide();
+	void onSliderMoved();
+	void onSliderPressed();
+	void onSliderReleased();
     void timer();
     void stateTimer();
     void getImage();
     void get25DImage();
+    void updatePlaybackState();
   
     void stateChangedListener(const rw::kinematics::State& state);
 
