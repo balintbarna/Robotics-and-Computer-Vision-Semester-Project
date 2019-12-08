@@ -78,14 +78,15 @@ void SamplePlugin::btnPressed() {
     QObject *obj = sender();
 	if(obj == _btn_state_playback)
 	{
-		cout<<"playback"<<endl;
 		if (!_stateTimer->isActive())
 		{
+			cout<<"starting playback"<<endl;
             _stateTimer->start(100); // run 10 Hz
             _step = 0;
         }
         else
 		{
+			cout<<"stopping playback"<<endl;
 			_stateTimer->stop();
             _step = 0;
 		}
@@ -97,7 +98,7 @@ void SamplePlugin::btnPressed() {
 	}
 	if(obj == _btn_reach_all)
 	{
-		cout<<"reach"<<endl;
+		cout<<"reach all"<<endl;
 		analyse_reachability(getRobWorkStudio(), globals::wc, globals::device, globals::target, globals::detector, true);
 	}
 	if(obj==_btn0){
@@ -222,6 +223,7 @@ void SamplePlugin::stateTimer() {
     }
 	else
 	{
+		cout<<"finished playback"<<endl;
 		_stateTimer->stop();
 	}
 	
