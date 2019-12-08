@@ -56,15 +56,9 @@ void check_solutions(vector<Q> &solutions, SerialDevice::Ptr robot, CollisionDet
 {
 	for(auto &sol : solutions)
 	{
-		if(all)
-			globals::states.push_back(state);
-
 		robot->setQ(sol, state);
 		// set the robot in that configuration and check if it is in collision
-		if( !detector->inCollision(state,NULL,true) ){
-			if(all == false)
-				globals::states.push_back(state);
-
+		if(!detector->inCollision(state,NULL,true)){
 			states.push_back(state); // save it
 			break; // we only need one
 		}
@@ -134,8 +128,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	State state = wc->getDefaultState();
 	globals::gripper->setQ(Q(1, 0.045), state);
 
-	globals::states.clear();
-	vector<State> collisionFreeStates;
+	vector<State> bestStates;
 
 	// set up random seed
 	srand(time(NULL));
@@ -143,7 +136,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	auto robRef = globals::robotRef;
 	auto startPos = robRef->getTransform(state).P();
 	auto startRot = robRef->getTransform(state).R();
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 10; i++)
 	{
 		// move robot to random pos
 		if(i > 0)
@@ -157,16 +150,23 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 		}
 
 		// do checks in that pose
+		vector<State> collisionFreeStates;
 		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state, all);
 		if(goal != NULL)
 		{
 			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state, all);
 		}
+		if(collisionFreeStates.size() > bestStates.size())
+		{
+			bestStates = collisionFreeStates;
+		}
 	}
+
+	globals::states = bestStates;
 	
 
 	cout << "Current position of the robot vs object to be grasped has: "
-		 << collisionFreeStates.size()
+		 << bestStates.size()
 		 << " collision-free inverse kinematics solutions!" << endl;
 
 
