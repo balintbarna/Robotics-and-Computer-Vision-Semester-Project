@@ -14,10 +14,15 @@ SamplePlugin::SamplePlugin():
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
     connect(_stateTimer, SIGNAL(timeout()), this, SLOT(stateTimer()));
 
+	// connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderMoved()));
+	connect(_slider, SIGNAL(sliderMoved(int)), this, SLOT(onSliderMoved()));
+	connect(_slider, SIGNAL(sliderPressed()), this, SLOT(onSliderPressed()));
+	connect(_slider, SIGNAL(sliderReleased()), this, SLOT(onSliderReleased()));
+
 	// now connect stuff from the ui component
 	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_reach_all    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_state_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_reset_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn0    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
@@ -53,7 +58,7 @@ void SamplePlugin::open(WorkCell* workcell)
 
     log().info() << workcell->getFilename() << "\n";
 
-    _step = -1;
+    _step = 0;
 }
 
 
@@ -73,6 +78,27 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 	return res;
 }
 
+bool playbackWasOn = false;
+void SamplePlugin::onSliderMoved()
+{
+	cout<<"slider moved"<<endl;
+	_step = _slider->value();
+	updatePlaybackState();
+}
+void SamplePlugin::onSliderPressed()
+{
+	// cout<<"slider pressed"<<endl;
+	playbackWasOn = _stateTimer->isActive();
+	_stateTimer->stop();
+}
+void SamplePlugin::onSliderReleased()
+{
+	// cout<<"slider released"<<endl;
+	_step = _slider->value();
+	updatePlaybackState();
+	if (playbackWasOn)
+		_stateTimer->start();
+}
 
 void SamplePlugin::btnPressed() {
     QObject *obj = sender();
@@ -81,25 +107,26 @@ void SamplePlugin::btnPressed() {
 		if (!_stateTimer->isActive())
 		{
 			cout<<"starting playback"<<endl;
-            _stateTimer->start(50); // ms
-            _step = 0;
+            _stateTimer->start(25); // ms
         }
         else
 		{
 			cout<<"stopping playback"<<endl;
 			_stateTimer->stop();
-            _step = 0;
 		}
+	}
+	if(obj == _btn_reset_playback)
+	{
+		cout<<"resetting playback"<<endl;
+		_stateTimer->stop();
+		_step = 0;
+		_slider->setValue(_step);
+		updatePlaybackState();
 	}
 	if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		analyse_reachability(globals::wc, globals::device, globals::dogmiddle, globals::doghead, globals::detector, false, globals::goal);
-	}
-	if(obj == _btn_reach_all)
-	{
-		cout<<"reach all"<<endl;
-		analyse_reachability(globals::wc, globals::device, globals::dogmiddle, globals::doghead, globals::detector, true, globals::goal);
+		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
 	}
 	if(obj==_btn0){
 //		log().info() << "Button 0\n";
@@ -136,8 +163,29 @@ void SamplePlugin::btnPressed() {
 	else if( obj==_btn_scan ){
 		get25DImage();
 	}
-	
-	
+}
+
+void SamplePlugin::stateTimer()
+{
+	auto s = globals::states.size();
+    if(0 <= _step && _step < s)
+	{
+		_slider->setMaximum(s - 1);
+		_slider->setValue(_step);
+		updatePlaybackState();
+        _step++;
+    }
+	else
+	{
+		cout<<"finished playback"<<endl;
+		_stateTimer->stop();
+		_step = 0;
+	}
+}
+
+void SamplePlugin::updatePlaybackState()
+{
+	getRobWorkStudio()->setState(globals::states[_step]);
 }
 
 
@@ -211,7 +259,7 @@ void SamplePlugin::timer()
 {
     if(0 <= _step && _step < globals::path.size())
 	{
-        globals::device->setQ(globals::path.at(_step),globals::state);
+        globals::robot->setQ(globals::path.at(_step),globals::state);
         getRobWorkStudio()->setState(globals::state);
         _step++;
     }
@@ -222,34 +270,19 @@ void SamplePlugin::timer()
 	
 }
 
-void SamplePlugin::stateTimer()
-{
-    if(0 <= _step && _step < globals::states.size())
-	{
-        getRobWorkStudio()->setState(globals::states[_step]);
-        _step++;
-    }
-	else
-	{
-		cout<<"finished playback"<<endl;
-		_stateTimer->stop();
-	}
-	
-}
-
 void SamplePlugin::stateChangedListener(const State& state)
 {
   globals::state = state;
 }
 
-bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q)
+bool SamplePlugin::checkCollisions(Device::Ptr robot, const State &state, const CollisionDetector &detector, const Q &q)
 {
     State testState;
     CollisionDetector::QueryResult data;
     bool colFrom;
 
     testState = state;
-    device->setQ(q,testState);
+    robot->setQ(q,testState);
     colFrom = detector.inCollision(testState,&data);
     if (colFrom) {
         cerr << "Configuration in collision: " << q << endl;
@@ -265,18 +298,18 @@ bool SamplePlugin::checkCollisions(Device::Ptr device, const State &state, const
 
 void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double maxTime)
 {
-    globals::device->setQ(from,globals::state);
+    globals::robot->setQ(from,globals::state);
     getRobWorkStudio()->setState(globals::state);
     CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
-    PlannerConstraint constraint = PlannerConstraint::make(&detector,globals::device,globals::state);
-    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(globals::device),constraint.getQConstraintPtr());
+    PlannerConstraint constraint = PlannerConstraint::make(&detector,globals::robot,globals::state);
+    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(globals::robot),constraint.getQConstraintPtr());
     QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
     QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
 
     globals::path.clear();
-    if (!checkCollisions(globals::device, globals::state, detector, from))
+    if (!checkCollisions(globals::robot, globals::state, detector, from))
         cout << from << " is in colission!" << endl;
-    if (!checkCollisions(globals::device, globals::state, detector, to))
+    if (!checkCollisions(globals::robot, globals::state, detector, to))
         cout << to << " is in colission!" << endl;;
     Timer t;
     t.resetAndResume();

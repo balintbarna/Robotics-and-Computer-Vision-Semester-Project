@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <string>
+#include <random>
+#include <time.h> 
 
 USE_ROBWORK_NAMESPACE
 using namespace std;
@@ -21,7 +23,7 @@ using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
 
 
-vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State state)
+vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State &state)
 {
     // Get, make and print name of frames
     const string robotName = robot->getName();
@@ -50,33 +52,26 @@ vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDev
     return closedFormSovler->solve(targetAt, state);
 }
 
-void check_solutions(vector<Q> &solutions, SerialDevice::Ptr robot, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+void check_solutions(vector<Q> &solutions, SerialDevice::Ptr robot, CollisionDetector::Ptr detector, vector<State> &states, State &state)
 {
 	for(auto &sol : solutions)
 	{
-		if(all)
-			globals::states.push_back(state);
-
 		robot->setQ(sol, state);
 		// set the robot in that configuration and check if it is in collision
-		if( !detector->inCollision(state,NULL,true) ){
-			if(all == false)
-				globals::states.push_back(state);
-
+		if(!detector->inCollision(state,NULL,true)){
 			states.push_back(state); // save it
 			break; // we only need one
 		}
 	}
 }
 
-void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, vector<State> &states, State &state, bool all)
+void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, vector<State> &states, State &state)
 {
 	globals::target->attachTo(targetUp.get(), state);
 	Vector3D<double> zeroPos(0, 0, 0);
 	// for every degree around the roll axis
 	for(double angle=0; angle<360.0; angle+=1.0)
 	{
-		cout<<"Checking angle:"<<angle<<endl;
 		globals::target->moveTo(
 				Transform3D<>(
 						zeroPos,
@@ -87,12 +82,11 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 				, state);
 
 		vector<Q> solutions = getConfigurations(globals::target, globals::graspTcp, robot, wc, state);
-		check_solutions(solutions, robot, detector, states, state, all);
+		check_solutions(solutions, robot, detector, states, state);
 	}
 	globals::target->attachTo(targetSide.get(), state);
 	for(double angle=0; angle<360.0; angle+=1.0)
 	{
-		cout<<"Checking angle:"<<angle<<endl;
 		globals::target->moveTo(
 				Transform3D<>(
 						zeroPos,
@@ -103,11 +97,11 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 				, state);
 
 		vector<Q> solutions = getConfigurations(globals::target, globals::graspTcp, robot, wc, state);
-		check_solutions(solutions, robot, detector, states, state, all);
+		check_solutions(solutions, robot, detector, states, state);
 	}
 }
 
-int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, bool all, MovableFrame::Ptr goal)
+int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, MovableFrame::Ptr goal, int num_pos)
 {
 	//load workcell
 	if(NULL==wc){
@@ -134,18 +128,45 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	State state = wc->getDefaultState();
 	globals::gripper->setQ(Q(1, 0.045), state);
 
-	globals::states.clear();
-	vector<State> collisionFreeStates;
+	vector<State> bestStates;
 
-	check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state, all);
-	if(goal != NULL)
+	// set up random seed
+	srand(time(NULL));
+	// look at 10 random base locations
+	auto robRef = globals::robotRef;
+	auto startPos = robRef->getTransform(state).P();
+	auto startRot = robRef->getTransform(state).R();
+	for(int i = 0; i < num_pos; i++)
 	{
-		check_target(wc,robot,goal,goal,detector,collisionFreeStates, state, all);
+		// move robot to random pos
+		if(i > 0)
+		{
+		double xdif = (rand() % 1000 - 500) / 1000.0;
+		double ydif = (rand() % 1000 - 500) / 1000.0;
+		robRef->moveTo(Transform3D<>(
+			Vector3D<double>(xdif, ydif, 0),
+			startRot),
+			state);
+		}
+
+		// do checks in that pose
+		vector<State> collisionFreeStates;
+		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state);
+		if(goal != NULL)
+		{
+			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state);
+		}
+		if(collisionFreeStates.size() > bestStates.size())
+		{
+			bestStates = collisionFreeStates;
+		}
 	}
+
+	globals::states = bestStates;
 	
 
 	cout << "Current position of the robot vs object to be grasped has: "
-		 << collisionFreeStates.size()
+		 << bestStates.size()
 		 << " collision-free inverse kinematics solutions!" << endl;
 
 

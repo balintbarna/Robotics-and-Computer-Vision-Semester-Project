@@ -20,21 +20,38 @@
      <item>
        <widget class="QPushButton" name="_btn_state_playback">
         <property name="text">
-         <string>State playback</string>
+         <string>Play/Pause</string>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="_btn_reset_playback">
+        <property name="text">
+         <string>Stop</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="_slider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="_spinLabel">
+        <property name="text">
+         <string>Pos num to try</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="_spinBox"/>
       </item>
       <item>
        <widget class="QPushButton" name="_btn_reach">
         <property name="text">
          <string>Reachability</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="_btn_reach_all">
-        <property name="text">
-         <string>Reachability All</string>
         </property>
        </widget>
       </item>
@@ -63,16 +80,6 @@
        <widget class="QPushButton" name="_btn1">
         <property name="text">
          <string>Run Path</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QSpinBox" name="_spinBox"/>
-      </item>
-      <item>
-       <widget class="QSlider" name="_slider">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>
