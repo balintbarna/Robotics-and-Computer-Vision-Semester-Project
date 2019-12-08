@@ -13,12 +13,14 @@
 	<Include file="UR5/UR-6-85-5-A/Device.wc.xml" />
 
 <!--insert gripper definition-->
-
-
-	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
-		<RPY>45 0 0</RPY> <Pos>0 0 0.072</Pos>
+	<Frame name="GripperBase" refframe="UR-6-85-5-A.TCP" type="Fixed">
+		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
 	</Frame>
 	<Include file="wsg50/wsg50.xml" />
+
+	<Frame name="GraspTCP" refframe="WSG50.TCP" type="Fixed">
+		<RPY>0 0 0</RPY> <Pos>0 0 0</Pos>
+	</Frame>
 	
 	<Frame name="Bottle" refframe="Table"  type="Movable" daf="true" >
      <RPY> -90 0 90 </RPY> <Pos> 0 0.474 0.21 </Pos>
