@@ -16,7 +16,7 @@
 
 
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
-		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
+		<RPY>45 0 0</RPY> <Pos>0 0 0.072</Pos>
 	</Frame>
 	<Include file="wsg50/wsg50.xml" />
 	
@@ -40,12 +40,16 @@
 </Frame>
 
 	<Frame name="Dog" refframe="Table"  type="Movable" daf="true" >
-     <RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
-     <Drawable name="Dog" refframe="Dog">
-		 <RGB>1.0 1.0 1.0</RGB>
-         <Polytope file="parts/dog_stl3" />
-     </Drawable>
-</Frame>
+    	<RPY> -90 0 90 </RPY> <Pos> 0.25 0.474 0.1115</Pos>
+    	<Drawable name="Dog" refframe="Dog">
+			<RGB>1.0 1.0 1.0</RGB>
+        	<Polytope file="parts/dog_stl3" />
+    	</Drawable>
+	</Frame>
+
+	<Frame name="Target" refframe="Dog" type="Movable" daf="true" >
+		<RPY> 0 0 0 </RPY> <Pos> 0 0 0 </Pos>
+	</Frame>
 
 <!-- Cameras -->
 
