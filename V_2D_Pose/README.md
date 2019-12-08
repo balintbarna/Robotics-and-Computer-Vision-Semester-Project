@@ -4,11 +4,12 @@ This code can generate tons of templates for a 3D object, then match a camera im
 You need covis, vtk and opencv2 binaries and make sure that CMake can find them.
 ```
 mkdir build
-mkdir templates
+mkdir t
 cd build
 cmake ..
 make -j
-cd ../templates
-./../build/create_templates_cad ../files/obj_09.ply --no-depth --no-cloud -r 650,700,750
-./linemod ../templates/ ../files/1017.png -t 50 -p 3
+cd ../t
+./../build/create_templates_cad ../files/doggo.ply --no-depth --no-cloud -r 650,700,750--lat-begin 45 --lat-end 80 --lon-begin 0 --lon-end 360 --fov 45.5 --bc 1,0,0 -t 1 -s 4 -v
+cd ../build
+./linemod ../t/ ../files/scene.png -t 50 -p 3
 ```
