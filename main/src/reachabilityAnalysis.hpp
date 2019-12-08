@@ -163,6 +163,13 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	}
 
 	globals::states = bestStates;
+
+	int val = bestStates.size();
+	if(val > globals::bestRobotPoseValue)
+	{
+		globals::bestRobotPose = globals::robotRef->getTransform(bestStates[0]);
+		globals::bestRobotPoseValue = val;
+	}
 	
 
 	cout << "Current position of the robot vs object to be grasped has: "

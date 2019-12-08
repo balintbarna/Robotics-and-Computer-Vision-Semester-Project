@@ -73,6 +73,8 @@ namespace globals
     MovableFrame::Ptr doghead;
     MovableFrame::Ptr goal;
     vector<State> states;
+    Transform3D bestRobotPose;
+    int bestRobotPoseValue = 0;
 
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)
     {

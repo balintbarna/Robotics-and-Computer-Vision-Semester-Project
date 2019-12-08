@@ -3,7 +3,6 @@
 #include "reachabilityAnalysis.hpp"
 
 
-
 SamplePlugin::SamplePlugin():
     RobWorkStudioPlugin("SamplePluginUI", QIcon(":/pa_icon.png"))
 {
