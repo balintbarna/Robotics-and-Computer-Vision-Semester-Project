@@ -79,6 +79,7 @@ public:
 
 private slots:
     void btnPressed();
+    void onSlide();
     void timer();
     void stateTimer();
     void getImage();

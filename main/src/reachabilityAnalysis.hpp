@@ -136,7 +136,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	auto robRef = globals::robotRef;
 	auto startPos = robRef->getTransform(state).P();
 	auto startRot = robRef->getTransform(state).R();
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < 20; i++)
 	{
 		// move robot to random pos
 		if(i > 0)

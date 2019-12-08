@@ -14,6 +14,8 @@ SamplePlugin::SamplePlugin():
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
     connect(_stateTimer, SIGNAL(timeout()), this, SLOT(stateTimer()));
 
+	connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(onSlide()));
+
 	// now connect stuff from the ui component
 	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_reach_all    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
@@ -54,7 +56,7 @@ void SamplePlugin::open(WorkCell* workcell)
 
     log().info() << workcell->getFilename() << "\n";
 
-    _step = -1;
+    _step = 0;
 }
 
 
@@ -74,6 +76,10 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 	return res;
 }
 
+void SamplePlugin::onSlide()
+{
+	_step = _slider->value();
+}
 
 void SamplePlugin::btnPressed() {
     QObject *obj = sender();
