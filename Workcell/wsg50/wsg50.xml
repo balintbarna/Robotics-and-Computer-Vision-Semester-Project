@@ -2,7 +2,7 @@
 
   <!--BASE-->
   <Frame name="Base" type="Fixed">
-    <RPY> 45 0 0 </RPY>
+    <RPY> 0 0 0 </RPY>
     <Pos> 0 0 0 </Pos>
   </Frame>
 
