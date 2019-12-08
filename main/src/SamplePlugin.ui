@@ -20,14 +20,14 @@
      <item>
        <widget class="QPushButton" name="_btn_state_playback">
         <property name="text">
-         <string>State playback</string>
+         <string>Play/Pause</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="_btn_reset_playback">
         <property name="text">
-         <string>Reset playback</string>
+         <string>Stop</string>
         </property>
        </widget>
       </item>
