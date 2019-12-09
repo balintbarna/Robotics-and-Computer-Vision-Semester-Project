@@ -93,12 +93,18 @@ void createPath(Q from, Q to,  double extend, double maxTime)
 
         path=tempQ;
     }
+	ofstream f;
+	f.open("rrtData.txt");
+    f << "x\ty\ty" << endl;
     globals::states.clear();
     for(auto &q : path)
     {
         robot->setQ(q, state);
+        auto baseTdog = robot->baseTframe(globals::dog.get(), state);
+        f<<baseTdog.P()[0]<<"\t"<<baseTdog.P()[1]<<"\t"<<baseTdog.P()[2]<<endl;
         globals::states.push_back(state);
     }
+    f.close();
 }
 
 int main_backup(int argc, char** argv) {
