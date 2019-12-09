@@ -76,6 +76,7 @@ private slots:
 	void onSliderReleased();
     void timer();
     void updatePlaybackState();
+    void setDefaultState();
     void stateChangedListener(const rw::kinematics::State& state);
 
 private:

@@ -24,7 +24,7 @@ SamplePlugin::SamplePlugin():
 	connect(_btn_reset_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn0    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_calcpath    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_spinBox  ,SIGNAL(valueChanged(int)), this, SLOT(btnPressed()) );
 
 	globals::framegrabber = NULL;
@@ -73,6 +73,11 @@ bool playbackWasOn = false;
 void SamplePlugin::onSliderMoved()
 {
 	// cout<<"slider moved"<<endl;
+	auto s = globals::states.size();
+    if(s > 0)
+	{
+		_slider->setMaximum(s - 1);
+    }
 	_step = _slider->value();
 	updatePlaybackState();
 }
@@ -81,10 +86,20 @@ void SamplePlugin::onSliderPressed()
 	// cout<<"slider pressed"<<endl;
 	playbackWasOn = _timer->isActive();
 	_timer->stop();
+	auto s = globals::states.size();
+    if(s > 0)
+	{
+		_slider->setMaximum(s - 1);
+    }
 }
 void SamplePlugin::onSliderReleased()
 {
 	// cout<<"slider released"<<endl;
+	auto s = globals::states.size();
+    if(s > 0)
+	{
+		_slider->setMaximum(s - 1);
+    }
 	_step = _slider->value();
 	updatePlaybackState();
 	if (playbackWasOn)
@@ -119,7 +134,7 @@ void SamplePlugin::btnPressed() {
 		cout<<"reach"<<endl;
 		reach::analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
 	}
-	else if(obj==_btn0){
+	else if(obj==_btn_calcpath){
 //		log().info() << "Button 0\n";
 //		// Toggle the timer on and off
 //		if (!_timer25D->isActive())
@@ -138,7 +153,7 @@ void SamplePlugin::btnPressed() {
 		log().info() << "spin value:" << _spinBox->value() << "\n";
 	}
 	else if( obj==_btn_im ){
-		imager::getImage(_label);
+		imager::getImage(_im_label);
 	}
 	else if( obj==_btn_scan ){
 		imager::get25DImage();
@@ -163,9 +178,16 @@ void SamplePlugin::timer()
 	}
 }
 
+void SamplePlugin::setDefaultState()
+{
+	getRobWorkStudio()->setState(globals::wc->getDefaultState());
+}
+
 void SamplePlugin::updatePlaybackState()
 {
-	getRobWorkStudio()->setState(globals::states[_step]);
+	auto s = globals::states.size();
+	if(0 < _step && _step < s)
+		getRobWorkStudio()->setState(globals::states[_step]);
 }
 
 void SamplePlugin::stateChangedListener(const State& state)
