@@ -26,8 +26,8 @@ using namespace rw::invkin;
 
 Transform3D<double> bestRobotPose;
 int bestRobotPoseValue = 0;
-Q pickupConf;
-Q placeConf;
+Q bestPickupConf;
+Q bestPlaceConf;
 
 vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State &state)
 {
@@ -135,6 +135,8 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	globals::gripper->setQ(Q(1, 0.045), state);
 
 	vector<State> bestStates;
+	Q pickupConf;
+	Q placeConf;
 
 	// set up random seed
 	srand(time(NULL));
@@ -144,27 +146,43 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	auto startRot = robRef->getTransform(state).R();
 	for(int i = 0; i < num_pos; i++)
 	{
+		cout<<"Trying position "<<i<<endl;
 		// move robot to random pos
 		if(i > 0)
 		{
-		double xdif = (rand() % 1000 - 500) / 1000.0;
-		double ydif = (rand() % 1000 - 500) / 1000.0;
-		robRef->moveTo(Transform3D<>(
-			Vector3D<double>(xdif, ydif, 0),
-			startRot),
-			state);
+			double xdif = (rand() % 1000 - 500) / 1000.0;
+			double ydif = (rand() % 1000 - 500) / 1000.0;
+			robRef->moveTo(Transform3D<>(
+				Vector3D<double>(xdif, ydif, 0),
+				startRot),
+				state);
 		}
 
 		// do checks in that pose
 		vector<State> collisionFreeStates;
+		// picup
 		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state);
+		Q tempPickup;
+		Q tempPlace;
+		if(collisionFreeStates.size() > 0)
+		{
+			tempPickup = robot->getQ(collisionFreeStates[0]);
+		}
+		int statesSize = collisionFreeStates.size();
 		if(goal != NULL)
 		{
+			// place
 			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state);
+			if(statesSize < collisionFreeStates.size())
+			{
+				tempPlace = robot->getQ(collisionFreeStates[statesSize]);
+			}
 		}
 		if(collisionFreeStates.size() > bestStates.size())
 		{
 			bestStates = collisionFreeStates;
+			pickupConf = tempPickup;
+			placeConf = tempPlace;
 		}
 	}
 
@@ -174,7 +192,11 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	if(val > bestRobotPoseValue)
 	{
 		bestRobotPose = globals::robotRef->getTransform(bestStates[0]);
+		// auto pos = bestRobotPose.P();
+		// bestRobotPose = Transform3D<>(Vector3D<>(pos[0], pos[1], 0), bestRobotPose.R());
 		bestRobotPoseValue = val;
+		bestPickupConf = pickupConf;
+		bestPlaceConf = placeConf;
 	}
 	
 
