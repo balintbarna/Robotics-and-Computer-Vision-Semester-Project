@@ -23,11 +23,32 @@
 	</Frame>
 	
 	<Frame name="Bottle" refframe="Table"  type="Movable" daf="true" >
-     <RPY> -90 0 90 </RPY> <Pos> 0 0.474 0.21 </Pos>
-     <Drawable name="Bottle" refframe="Bottle">
-         <Polytope file="parts/bottle" />
-     </Drawable>
-</Frame>
+    	<RPY> -90 0 90 </RPY> <Pos> 0 0.474 0.21 </Pos>
+    	<Drawable name="Bottle" refframe="Bottle">
+        	<Polytope file="parts/bottle" />
+    	</Drawable>
+	</Frame>
+
+	<Frame name="Bottle1" refframe="Table"  type="Movable" daf="true" >
+    	<RPY> -90 0 90 </RPY> <Pos> 0.3 0.0 0.3 </Pos>
+    	<Drawable name="Bottle1" refframe="Bottle1">
+        	<Polytope file="parts/bottle" />
+    	</Drawable>
+	</Frame>
+
+	<Frame name="Bottle2" refframe="Table"  type="Movable" daf="true" >
+    	<RPY> -90 0 90 </RPY> <Pos> 0.45 0.0 0.3 </Pos>
+    	<Drawable name="Bottle2" refframe="Bottle2">
+        	<Polytope file="parts/bottle" />
+    	</Drawable>
+	</Frame>
+
+	<Frame name="Bottle3" refframe="Table"  type="Movable" daf="true" >
+    	<RPY> -90 0 90 </RPY> <Pos> 0.6 0.0 0.3 </Pos>
+    	<Drawable name="Bottle3" refframe="Bottle3">
+        	<Polytope file="parts/bottle" />
+    	</Drawable>
+	</Frame>
 
 	<Frame name="Goal" refframe="Table"  type="Movable" daf="true" >
 		<RPY> -90 0 90 </RPY> <Pos> 0.3 -0.5 0.211 </Pos>
