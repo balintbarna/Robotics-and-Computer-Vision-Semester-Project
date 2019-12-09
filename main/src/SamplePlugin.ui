@@ -77,13 +77,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="_btn1">
-        <property name="text">
-         <string>Run Path</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLabel" name="_label">
         <property name="text">
          <string>Label</string>

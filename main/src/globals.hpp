@@ -64,7 +64,6 @@ namespace globals
     MovableFrame::Ptr robotRef;
     SerialDevice::Ptr robot;
     TreeDevice::Ptr gripper;
-    QPath path;
     CollisionDetector::Ptr detector;
     MovableFrame::Ptr target;
     Frame::Ptr graspTcp;
@@ -73,7 +72,7 @@ namespace globals
     MovableFrame::Ptr doghead;
     MovableFrame::Ptr goal;
     vector<State> states;
-    Transform3D bestRobotPose;
+    Transform3D<double> bestRobotPose;
     int bestRobotPoseValue = 0;
 
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)

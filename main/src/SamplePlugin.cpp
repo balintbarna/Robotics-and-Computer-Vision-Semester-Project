@@ -1,6 +1,7 @@
 #include "SamplePlugin.hpp"
 #include "globals.hpp"
 #include "reachabilityAnalysis.hpp"
+#include "rrtconnect.hpp"
 
 
 SamplePlugin::SamplePlugin():
@@ -9,9 +10,7 @@ SamplePlugin::SamplePlugin():
 	setupUi(this);
 
 	_timer = new QTimer(this);
-	_stateTimer = new QTimer(this);
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
-    connect(_stateTimer, SIGNAL(timeout()), this, SLOT(stateTimer()));
 
 	// connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderMoved()));
 	connect(_slider, SIGNAL(sliderMoved(int)), this, SLOT(onSliderMoved()));
@@ -25,7 +24,6 @@ SamplePlugin::SamplePlugin():
 	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_btn0    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn1    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
 	connect(_spinBox  ,SIGNAL(valueChanged(int)), this, SLOT(btnPressed()) );
 
 	globals::framegrabber = NULL;
@@ -66,7 +64,6 @@ void SamplePlugin::close() {
 
     // Stop the timer
     _timer->stop();
-	_stateTimer->stop();
     // Remove the texture render
 	globals::close(this);
 }
@@ -80,15 +77,15 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 bool playbackWasOn = false;
 void SamplePlugin::onSliderMoved()
 {
-	cout<<"slider moved"<<endl;
+	// cout<<"slider moved"<<endl;
 	_step = _slider->value();
 	updatePlaybackState();
 }
 void SamplePlugin::onSliderPressed()
 {
 	// cout<<"slider pressed"<<endl;
-	playbackWasOn = _stateTimer->isActive();
-	_stateTimer->stop();
+	playbackWasOn = _timer->isActive();
+	_timer->stop();
 }
 void SamplePlugin::onSliderReleased()
 {
@@ -96,38 +93,38 @@ void SamplePlugin::onSliderReleased()
 	_step = _slider->value();
 	updatePlaybackState();
 	if (playbackWasOn)
-		_stateTimer->start();
+		_timer->start();
 }
 
 void SamplePlugin::btnPressed() {
     QObject *obj = sender();
 	if(obj == _btn_state_playback)
 	{
-		if (!_stateTimer->isActive())
+		if (!_timer->isActive())
 		{
 			cout<<"starting playback"<<endl;
-            _stateTimer->start(25); // ms
+            _timer->start(25); // ms
         }
         else
 		{
 			cout<<"stopping playback"<<endl;
-			_stateTimer->stop();
+			_timer->stop();
 		}
 	}
-	if(obj == _btn_reset_playback)
+	else if(obj == _btn_reset_playback)
 	{
 		cout<<"resetting playback"<<endl;
-		_stateTimer->stop();
+		_timer->stop();
 		_step = 0;
 		_slider->setValue(_step);
 		updatePlaybackState();
 	}
-	if(obj == _btn_reach)
+	else if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
+		reach::analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
 	}
-	if(obj==_btn0){
+	else if(obj==_btn0){
 //		log().info() << "Button 0\n";
 //		// Toggle the timer on and off
 //		if (!_timer25D->isActive())
@@ -140,18 +137,7 @@ void SamplePlugin::btnPressed() {
         double maxTime = 60;
         Q from(6, 1.571, -1.572, -1.572, -1.572, 1.571, 0);
         Q to(6, 1.847, -2.465, -1.602, -0.647, 1.571, 0); //From pose estimation
-        createPathRRTConnect(from, to, extend, maxTime);
-
-
-	} else if(obj==_btn1){
-        log().info() << "Button 1\n";
-        // Toggle the timer on and off
-        if (!_timer->isActive()){
-            _timer->start(100); // ms
-            _step = 0;
-        }
-        else
-            _step = 0;
+        rrtconnect::createPath(from, to, extend, maxTime);
 
 	} else if(obj==_spinBox){
 		log().info() << "spin value:" << _spinBox->value() << "\n";
@@ -164,7 +150,7 @@ void SamplePlugin::btnPressed() {
 	}
 }
 
-void SamplePlugin::stateTimer()
+void SamplePlugin::timer()
 {
 	auto s = globals::states.size();
     if(0 <= _step && _step < s)
@@ -177,7 +163,7 @@ void SamplePlugin::stateTimer()
 	else
 	{
 		cout<<"finished playback"<<endl;
-		_stateTimer->stop();
+		_timer->stop();
 		_step = 0;
 	}
 }
@@ -254,81 +240,8 @@ void SamplePlugin::getImage()
 	}
 }
 
-void SamplePlugin::timer()
-{
-    if(0 <= _step && _step < globals::path.size())
-	{
-        globals::robot->setQ(globals::path.at(_step),globals::state);
-        getRobWorkStudio()->setState(globals::state);
-        _step++;
-    }
-	else
-	{
-		_timer->stop();
-	}
-	
-}
-
 void SamplePlugin::stateChangedListener(const State& state)
 {
   globals::state = state;
 }
 
-bool SamplePlugin::checkCollisions(Device::Ptr robot, const State &state, const CollisionDetector &detector, const Q &q)
-{
-    State testState;
-    CollisionDetector::QueryResult data;
-    bool colFrom;
-
-    testState = state;
-    robot->setQ(q,testState);
-    colFrom = detector.inCollision(testState,&data);
-    if (colFrom) {
-        cerr << "Configuration in collision: " << q << endl;
-        cerr << "Colliding frames: " << endl;
-        FramePairSet fps = data.collidingFrames;
-        for (FramePairSet::iterator it = fps.begin(); it != fps.end(); it++) {
-            cerr << (*it).first->getName() << " " << (*it).second->getName() << endl;
-        }
-        return false;
-    }
-    return true;
-}
-
-void SamplePlugin::createPathRRTConnect(Q from, Q to,  double extend, double maxTime)
-{
-    globals::robot->setQ(from,globals::state);
-    getRobWorkStudio()->setState(globals::state);
-    CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
-    PlannerConstraint constraint = PlannerConstraint::make(&detector,globals::robot,globals::state);
-    QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(globals::robot),constraint.getQConstraintPtr());
-    QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
-    QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
-
-    globals::path.clear();
-    if (!checkCollisions(globals::robot, globals::state, detector, from))
-        cout << from << " is in colission!" << endl;
-    if (!checkCollisions(globals::robot, globals::state, detector, to))
-        cout << to << " is in colission!" << endl;;
-    Timer t;
-    t.resetAndResume();
-    planner->query(from,to,globals::path,maxTime);
-    t.pause();
-
-
-    if (t.getTime() >= maxTime) {
-        cout << "Notice: max time of " << maxTime << " seconds reached." << endl;
-    }
-
-	const int duration = 10;
-
-    if(globals::path.size() == 2){  //The interpolated path between Q start and Q goal is collision free. Set the duration with respect to the desired velocity
-        LinearInterpolator<Q> linInt(from, to, duration);
-        QPath tempQ;
-        for(int i = 0; i < duration+1; i++){
-            tempQ.push_back(linInt.x(i));
-        }
-
-        globals::path=tempQ;
-    }
-}

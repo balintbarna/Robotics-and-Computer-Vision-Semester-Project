@@ -11,9 +11,10 @@
 #include <random>
 #include <time.h> 
 
-USE_ROBWORK_NAMESPACE
+namespace reach
+{
+
 using namespace std;
-using namespace robwork;
 using namespace rw::models;
 using namespace rw::kinematics;
 using namespace rw::math;
@@ -21,7 +22,6 @@ using namespace rw::proximity;
 using namespace rw::common;
 using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
-
 
 vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State &state)
 {
@@ -178,6 +178,8 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 
 
 	return 0;
+}
+
 }
 
 #endif /*REACH_HPP*/

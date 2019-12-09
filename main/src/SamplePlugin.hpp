@@ -83,21 +83,16 @@ private slots:
 	void onSliderPressed();
 	void onSliderReleased();
     void timer();
-    void stateTimer();
     void getImage();
     void get25DImage();
     void updatePlaybackState();
   
     void stateChangedListener(const rw::kinematics::State& state);
 
-    bool checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q);
-    void createPathRRTConnect(Q from, Q to,  double extend, double maxTime);
-
 private:
     static cv::Mat toOpenCVImage(const rw::sensor::Image& img);
 
     QTimer* _timer;
-    QTimer* _stateTimer;
     QTimer* _timer25D;
     int _step;
 };
