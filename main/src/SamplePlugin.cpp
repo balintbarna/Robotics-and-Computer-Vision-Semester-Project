@@ -142,14 +142,13 @@ void SamplePlugin::btnPressed() {
 		setDefaultState();
 		globals::gripper->setQ(Q(1, 0.045), globals::state);
 		globals::robotRef->moveTo(reach::bestRobotPose, globals::state);
-		// rw::invkin::ClosedFormIKSolverUR::Ptr solver = ownedPtr(new rw::invkin::ClosedFormIKSolverUR(globals::robot, globals::state));
-		// auto fromTarget = rrtconnect::relativeTransformCalc(globals::dogmiddle, globals::state);
-		// Q from = solver->solve(targetAt, globals::state)[0];
-		// auto toTarget = rrtconnect::relativeTransformCalc(globals::goal, globals::state);
-		// Q to = solver->solve(targetAt, globals::state)[0];
 		Q from = reach::bestPickupConf;
 		Q to = reach::bestPlaceConf;
+		// rw::invkin::ClosedFormIKSolverUR::Ptr solver = ownedPtr(new rw::invkin::ClosedFormIKSolverUR(globals::robot, globals::state));
+		// auto toTarget = rrtconnect::relativeTransformCalc(globals::goal, globals::state);
+		// Q to = solver->solve(toTarget, globals::state)[0];
 		globals::robot->setQ(from, globals::state);
+		Kinematics::gripFrame(globals::dog.get(), globals::graspTcp.get(), globals::state);
 		setCurrentState();
         double extend = 0.05;
         double maxTime = 60;
