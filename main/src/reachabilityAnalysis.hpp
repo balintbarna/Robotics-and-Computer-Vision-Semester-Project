@@ -132,7 +132,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 
 	// get the default state
 	State state = wc->getDefaultState();
-	globals::gripper->setQ(Q(1, 0.045), state);
+	globals::gripper->setQ(Q(1, 0.035), state);
 
 	vector<State> bestStates;
 	Q pickupConf;
@@ -144,14 +144,21 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	auto robRef = globals::robotRef;
 	auto startPos = robRef->getTransform(state).P();
 	auto startRot = robRef->getTransform(state).R();
+	ofstream f;
+	f.open("reachData.csv");
+    f << "time\tx\ty\tsols" << "\n";
 	for(int i = 0; i < num_pos; i++)
 	{
+
+		Timer t;
+		t.resetAndResume();
 		cout<<"Trying position "<<i<<endl;
 		// move robot to random pos
+		double xdif, ydif;
 		if(i > 0)
 		{
-			double xdif = (rand() % 1000 - 500) / 1000.0;
-			double ydif = (rand() % 1000 - 500) / 1000.0;
+			xdif = (rand() % 1000 - 500) / 1000.0;
+			ydif = (rand() % 1000 - 500) / 1000.0;
 			robRef->moveTo(Transform3D<>(
 				Vector3D<double>(startPos[0] + xdif, startPos[1] + ydif, startPos[2]),
 				startRot),
@@ -184,6 +191,10 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 			pickupConf = tempPickup;
 			placeConf = tempPlace;
 		}
+
+		t.pause();
+		f << t.getTime() << "\t" << xdif << "\t" << ydif << "\t" << collisionFreeStates.size() << "\n";
+
 	}
 
 	globals::states = bestStates;
@@ -197,6 +208,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 		bestPlaceConf = placeConf;
 	}
 	
+	f.close();
 
 	cout << "Current position of the robot vs object to be grasped has: "
 		 << bestStates.size()
