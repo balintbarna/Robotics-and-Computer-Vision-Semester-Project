@@ -22,10 +22,11 @@ using namespace rw::trajectory;
 using namespace rwlibs::pathplanners;
 using namespace rwlibs::proximitystrategies;
 
-#define MAXTIME 60.
-
 namespace rrtconnect
 {
+
+    double bestDistance = 99999999;
+    QPath bestPath;
 
 Transform3D<double> relativeTransformCalc(Frame::Ptr targetFrame, State &state)
 {
@@ -56,9 +57,8 @@ bool checkCollisions(Device::Ptr device, const State &state, const CollisionDete
     return true;
 }
 
-void createPath(Q from, Q to,  double extend, double maxTime)
+QPath createPath(Q from, Q to,  double extend, double maxTime, State state)
 {
-    State state = globals::state;
     auto robot = globals::robot;
     CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
     PlannerConstraint constraint = PlannerConstraint::make(&detector,robot,state);
@@ -93,117 +93,66 @@ void createPath(Q from, Q to,  double extend, double maxTime)
 
         path=tempQ;
     }
-	ofstream f;
-	f.open("rrtData.txt");
-    f << "x\ty\ty" << endl;
-    globals::states.clear();
-    for(auto &q : path)
-    {
-        robot->setQ(q, state);
-        auto baseTdog = robot->baseTframe(globals::dog.get(), state);
-        f<<baseTdog.P()[0]<<"\t"<<baseTdog.P()[1]<<"\t"<<baseTdog.P()[2]<<endl;
-        globals::states.push_back(state);
-    }
-    f.close();
+    return path;
 }
 
-int main_backup(int argc, char** argv) {
+void test_rrt(Q from, Q to) {
 
     ofstream mydata;
-    mydata.open("ROBDATA.dat");
+    mydata.open("rrtPerfData.dat");
     mydata << "time\tdistance\teps\tsteps" << "\n";
     mydata.close();
 
-    mydata.open("ROBDATA.dat", std::ios_base::app);
+    mydata.open("rrtPerfData.dat", std::ios_base::app);
 
-    for (double extend = 0.02; extend <= 1.0; extend+=0.02)
+    double MAXTIME = 60;
+
+    State startState = globals::state;
+
+    for (double extend = 0.02; extend <= 0.2; extend+=0.02)
     {
-        for(int trial = 0; trial < 40; trial++)
+        for(int trial = 0; trial < 10; trial++)
         {
-            const string wcFile = "./Kr16WallWorkCell/Scene.wc.xml";
-            const string deviceName = "KukaKr16";
-            //cout << "Trying to use workcell " << wcFile << " and device " << deviceName << endl;
-            ofstream myfile;
-            myfile.open("path.lua");
-            rw::math::Math::seed();
-
-            WorkCell::Ptr wc = WorkCellLoader::Factory::load(wcFile);
-            Frame *tool_frame = wc->findFrame("Tool");
-            Frame *bottle_frame = wc->findFrame("Bottle");
-
-            Device::Ptr device = wc->findDevice(deviceName);        //process finished with exit code 139 (interrupted by signal 11: SIGSEGV)
-            if (device == NULL) {
-                cerr << "Device: " << deviceName << " not found!" << endl;
-                return 0;
-            }
-
-            State state = wc->getDefaultState();
-            Q from(6,-3.142, -0.827, -3.002, -3.143, 0.099, -1.573);
-            Q to(6,1.571, 0.006, 0.030, 0.153, 0.762, 4.490);
-            device->setQ(from,state);
-            Kinematics::gripFrame(bottle_frame, tool_frame, state);
-            CollisionDetector detector(wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
-            PlannerConstraint constraint = PlannerConstraint::make(&detector,device,state);
-
-            QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(device),constraint.getQConstraintPtr());
-            QMetric::Ptr metric = MetricFactory::makeEuclidean<Q>();
-            QToQPlanner::Ptr planner = RRTPlanner::makeQToQPlanner(constraint, sampler, metric, extend, RRTPlanner::RRTConnect);
-
-            if (!checkCollisions(device, state, detector, from))
-                return 0;
-            if (!checkCollisions(device, state, detector, to))
-                return 0;
-
-            myfile << "wc = rws.getRobWorkStudio():getWorkCell()\n"
-                      <<"state = wc:getDefaultState()"
-                      <<"\ndevice = wc:findDevice(\"KukaKr16\")"
-                      <<"\ngripper = wc:findFrame(\"Tool\")"
-                      <<"\nbottle = wc:findFrame(\"Bottle\")\n"
-                      <<"table = wc:findFrame(\"Table\")\n\n"
-                      <<"function setQ(q)\n"
-                      <<"qq = rw.Q(#q,q[1],q[2],q[3],q[4],q[5],q[6])\n"
-                      <<"device:setQ(qq,state)\n"
-                      <<"rws.getRobWorkStudio():setState(state)\n"
-                      <<"rw.sleep(0.1)\n"
-                      <<"end\n\n"
-                      <<"function attach(obj, tool)\n"
-                      <<"rw.gripFrame(obj, tool, state)\n"
-                      <<"rws.getRobWorkStudio():setState(state)\n"
-                      <<"rw.sleep(0.1)\n"
-                      <<"end\n\n";
-
-            //cout << "Planning from " << from << " to " << to << endl;
-            QPath path;
             Timer t;
             t.resetAndResume();
-            planner->query(from,to,path,MAXTIME);
+            QPath path = createPath(from, to, extend, MAXTIME, startState);
             t.pause();
             double distance = 0;
 
-
-            //cout << "Path of length " << path.size() << " found in " << t.getTime() << " seconds." << endl;
-            if (t.getTime() >= MAXTIME) {
-                cout << "Notice: max time of " << MAXTIME << " seconds reached." << endl;
-            }
-
-            for (unsigned int i = 0; i< path.size(); i++)
+            // STARTS FROM SECOND POSE
+            for (int i = 1; i < path.size(); i++)
             {
-                if(i == 1)
-                    myfile << "attach(bottle, gripper)\n";
-                if(i >= 1)
-                    distance += sqrt(pow((path.at(i)(0)-path.at(i-1)(0)),2)+pow((path.at(i)(1)-path.at(i-1)(1)),2)+pow((path.at(i)(2)-path.at(i-1)(2)),2)+pow((path.at(i)(3)-path.at(i-1)(3)),2)+pow((path.at(i)(4)-path.at(i-1)(4)),2)+pow((path.at(i)(5)-path.at(i-1)(5)),2));
-                //cout << path.at(i)(0) << endl;
-                myfile <<"setQ({" << path.at(i)(0) << "," << path.at(i)(1) << "," << path.at(i)(2) << "," << path.at(i)(3) << "," << path.at(i)(4) << "," << path.at(i)(5) << "})" << "\n";
+                distance += sqrt(pow((path.at(i)(0)-path.at(i-1)(0)),2)+pow((path.at(i)(1)-path.at(i-1)(1)),2)+pow((path.at(i)(2)-path.at(i-1)(2)),2)+pow((path.at(i)(3)-path.at(i-1)(3)),2)+pow((path.at(i)(4)-path.at(i-1)(4)),2)+pow((path.at(i)(5)-path.at(i-1)(5)),2));
+
             }
             mydata << t.getTime() << "\t" << distance << "\t" << extend << "\t" << path.size() << "\n";
 
-            myfile.close();
-            cout << trial << endl;
+            cout << "trial:" << trial << endl;
+            if(distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestPath = path;
+                cout<<"found new best path, distance:"<<distance<<endl;
+            }
         }
+        cout<<"extend:"<<extend<<endl;
     }
 
     mydata.close();
-	return 0;
+
+    ofstream f;
+	f.open("bestRrtPath.dat");
+    f << "x\ty\ty" << endl;
+    globals::states.clear();
+    for(auto &q : bestPath)
+    {
+        globals::robot->setQ(q, startState);
+        auto baseTdog = globals::robot->baseTframe(globals::dog.get(), startState);
+        f<<baseTdog.P()[0]<<"\t"<<baseTdog.P()[1]<<"\t"<<baseTdog.P()[2]<<endl;
+        globals::states.push_back(startState);
+    }
+    f.close();
+    cout<<"saved best path"<<endl;
 }
 
 }

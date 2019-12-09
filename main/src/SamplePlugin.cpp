@@ -154,7 +154,7 @@ void SamplePlugin::btnPressed() {
         double maxTime = 60;
         rw::math::Math::seed();
 		cout<<"calculating path"<<endl;
-        rrtconnect::createPath(from, to, extend, maxTime);
+        rrtconnect::test_rrt(from, to);
 		cout<<"path calculated"<<endl;
 
 	} else if(obj==_spinBox){
