@@ -60,7 +60,6 @@ void createPath(Q from, Q to,  double extend, double maxTime)
 {
     State state = globals::state;
     auto robot = globals::robot;
-    robot->setQ(from,state);
     CollisionDetector detector(globals::wc, ProximityStrategyFactory::makeDefaultCollisionStrategy());
     PlannerConstraint constraint = PlannerConstraint::make(&detector,robot,state);
     QSampler::Ptr sampler = QSampler::makeConstrained(QSampler::makeUniform(robot),constraint.getQConstraintPtr());
