@@ -153,7 +153,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 			double xdif = (rand() % 1000 - 500) / 1000.0;
 			double ydif = (rand() % 1000 - 500) / 1000.0;
 			robRef->moveTo(Transform3D<>(
-				Vector3D<double>(xdif, ydif, 0),
+				Vector3D<double>(startPos[0] + xdif, startPos[1] + ydif, startPos[2]),
 				startRot),
 				state);
 		}
@@ -192,8 +192,6 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	if(val > bestRobotPoseValue)
 	{
 		bestRobotPose = globals::robotRef->getTransform(bestStates[0]);
-		// auto pos = bestRobotPose.P();
-		// bestRobotPose = Transform3D<>(Vector3D<>(pos[0], pos[1], 0), bestRobotPose.R());
 		bestRobotPoseValue = val;
 		bestPickupConf = pickupConf;
 		bestPlaceConf = placeConf;

@@ -135,19 +135,28 @@ void SamplePlugin::btnPressed() {
 		reach::analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
 	}
 	else if(obj==_btn_calcpath){
-//		log().info() << "Button 0\n";
-//		// Toggle the timer on and off
-//		if (!_timer25D->isActive())
-//		    _timer25D->start(100); // run 10 Hz
-//		else
-//			_timer25D->stop();
+		cout<<"preparing for calculating path"<<endl;
+		// pause playback
         _timer->stop();
-        rw::math::Math::seed();
+		// set up state
+		setDefaultState();
+		globals::gripper->setQ(Q(1, 0.045), globals::state);
+		globals::robotRef->moveTo(reach::bestRobotPose, globals::state);
+		// rw::invkin::ClosedFormIKSolverUR::Ptr solver = ownedPtr(new rw::invkin::ClosedFormIKSolverUR(globals::robot, globals::state));
+		// auto fromTarget = rrtconnect::relativeTransformCalc(globals::dogmiddle, globals::state);
+		// Q from = solver->solve(targetAt, globals::state)[0];
+		// auto toTarget = rrtconnect::relativeTransformCalc(globals::goal, globals::state);
+		// Q to = solver->solve(targetAt, globals::state)[0];
+		Q from = reach::bestPickupConf;
+		Q to = reach::bestPlaceConf;
+		globals::robot->setQ(from, globals::state);
+		setCurrentState();
         double extend = 0.05;
         double maxTime = 60;
-        Q from(6, 1.571, -1.572, -1.572, -1.572, 1.571, 0);
-        Q to(6, 1.847, -2.465, -1.602, -0.647, 1.571, 0); //From pose estimation
+        rw::math::Math::seed();
+		cout<<"calculating path"<<endl;
         rrtconnect::createPath(from, to, extend, maxTime);
+		cout<<"path calculated"<<endl;
 
 	} else if(obj==_spinBox){
 		log().info() << "spin value:" << _spinBox->value() << "\n";
