@@ -23,6 +23,12 @@ using namespace rw::common;
 using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
 
+
+Transform3D<double> bestRobotPose;
+int bestRobotPoseValue = 0;
+Q pickupConf;
+Q placeConf;
+
 vector<Q> getConfigurations(Frame::Ptr frameGoal, Frame::Ptr frameTcp, SerialDevice::Ptr robot, WorkCell::Ptr wc, State &state)
 {
     // Get, make and print name of frames
@@ -165,10 +171,10 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	globals::states = bestStates;
 
 	int val = bestStates.size();
-	if(val > globals::bestRobotPoseValue)
+	if(val > bestRobotPoseValue)
 	{
-		globals::bestRobotPose = globals::robotRef->getTransform(bestStates[0]);
-		globals::bestRobotPoseValue = val;
+		bestRobotPose = globals::robotRef->getTransform(bestStates[0]);
+		bestRobotPoseValue = val;
 	}
 	
 

@@ -67,13 +67,12 @@ namespace globals
     CollisionDetector::Ptr detector;
     MovableFrame::Ptr target;
     Frame::Ptr graspTcp;
+    Frame::Ptr robotTcp;
     MovableFrame::Ptr dog;
     MovableFrame::Ptr dogmiddle;
     MovableFrame::Ptr doghead;
     MovableFrame::Ptr goal;
     vector<State> states;
-    Transform3D<double> bestRobotPose;
-    int bestRobotPoseValue = 0;
 
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)
     {
@@ -143,6 +142,7 @@ namespace globals
             dogmiddle = wc->findFrame<MovableFrame>("DogMiddle");
             doghead = wc->findFrame<MovableFrame>("DogHead");
             goal = wc->findFrame<MovableFrame>("Goal");
+            robotTcp = wc->findFrame(robot->getName() + "." + "TCP");
         }
     }
 
