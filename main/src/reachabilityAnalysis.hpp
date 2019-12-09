@@ -147,10 +147,10 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	ofstream f;
 	f.open("reachData.csv");
     f << "time\tx\ty\tsols" << "\n";
+	Timer t;
 	for(int i = 0; i < num_pos; i++)
 	{
 
-		Timer t;
 		t.resetAndResume();
 		cout<<"Trying position "<<i<<endl;
 		// move robot to random pos
