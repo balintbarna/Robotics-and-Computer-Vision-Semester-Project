@@ -19,9 +19,6 @@
 #include <RobWorkStudioConfig.hpp> // For RWS_USE_QT5 definition
 #include <rws/RobWorkStudioPlugin.hpp>
 
-// OpenCV 3
-#include <opencv2/opencv.hpp>
-
 // Qt
 #include <QTimer>
 
@@ -57,8 +54,6 @@ using namespace rwlibs::proximitystrategies;
 
 using namespace rws;
 
-using namespace cv;
-
 using namespace std::placeholders;
 
 
@@ -70,11 +65,8 @@ Q_PLUGIN_METADATA(IID "dk.sdu.mip.Robwork.RobWorkStudioPlugin/0.1" FILE "plugin.
 public:
     SamplePlugin();
     virtual ~SamplePlugin();
-
     virtual void open(rw::models::WorkCell* workcell);
-
     virtual void close();
-
     virtual void initialize();
 
 private slots:
@@ -83,21 +75,13 @@ private slots:
 	void onSliderPressed();
 	void onSliderReleased();
     void timer();
-    void stateTimer();
-    void getImage();
-    void get25DImage();
     void updatePlaybackState();
-  
+    void setDefaultState();
+    void setCurrentState();
     void stateChangedListener(const rw::kinematics::State& state);
 
-    bool checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q);
-    void createPathRRTConnect(Q from, Q to,  double extend, double maxTime);
-
 private:
-    static cv::Mat toOpenCVImage(const rw::sensor::Image& img);
-
     QTimer* _timer;
-    QTimer* _stateTimer;
     QTimer* _timer25D;
     int _step;
 };

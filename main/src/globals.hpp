@@ -64,17 +64,16 @@ namespace globals
     MovableFrame::Ptr robotRef;
     SerialDevice::Ptr robot;
     TreeDevice::Ptr gripper;
-    QPath path;
     CollisionDetector::Ptr detector;
     MovableFrame::Ptr target;
     Frame::Ptr graspTcp;
+    Frame::Ptr robotTcp;
+    Frame::Ptr table;
     MovableFrame::Ptr dog;
     MovableFrame::Ptr dogmiddle;
     MovableFrame::Ptr doghead;
     MovableFrame::Ptr goal;
     vector<State> states;
-    Transform3D bestRobotPose;
-    int bestRobotPoseValue = 0;
 
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)
     {
@@ -134,6 +133,7 @@ namespace globals
                 }
             }
 
+            table = wc->findFrame("Table");
             robotRef = wc->findFrame<MovableFrame>("URReference");
             robot = wc->findDevice<SerialDevice>("UR-6-85-5-A");
             gripper = wc->findDevice<TreeDevice>("WSG50");
@@ -144,6 +144,7 @@ namespace globals
             dogmiddle = wc->findFrame<MovableFrame>("DogMiddle");
             doghead = wc->findFrame<MovableFrame>("DogHead");
             goal = wc->findFrame<MovableFrame>("Goal");
+            robotTcp = wc->findFrame(robot->getName() + "." + "TCP");
         }
     }
 
