@@ -68,6 +68,7 @@ namespace globals
     MovableFrame::Ptr target;
     Frame::Ptr graspTcp;
     Frame::Ptr robotTcp;
+    Frame::Ptr table;
     MovableFrame::Ptr dog;
     MovableFrame::Ptr dogmiddle;
     MovableFrame::Ptr doghead;
@@ -132,6 +133,7 @@ namespace globals
                 }
             }
 
+            table = wc->findFrame("Table");
             robotRef = wc->findFrame<MovableFrame>("URReference");
             robot = wc->findDevice<SerialDevice>("UR-6-85-5-A");
             gripper = wc->findDevice<TreeDevice>("WSG50");
