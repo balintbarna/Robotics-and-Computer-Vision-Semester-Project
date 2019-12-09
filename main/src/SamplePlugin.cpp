@@ -180,7 +180,13 @@ void SamplePlugin::timer()
 
 void SamplePlugin::setDefaultState()
 {
-	getRobWorkStudio()->setState(globals::wc->getDefaultState());
+	globals::state = globals::wc->getDefaultState();
+	setCurrentState();
+}
+
+void SamplePlugin::setCurrentState()
+{
+	getRobWorkStudio()->setState(globals::state);
 }
 
 void SamplePlugin::updatePlaybackState()

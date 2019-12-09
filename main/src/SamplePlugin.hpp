@@ -77,6 +77,7 @@ private slots:
     void timer();
     void updatePlaybackState();
     void setDefaultState();
+    void setCurrentState();
     void stateChangedListener(const rw::kinematics::State& state);
 
 private:

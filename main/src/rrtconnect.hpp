@@ -27,6 +27,16 @@ using namespace rwlibs::proximitystrategies;
 namespace rrtconnect
 {
 
+Transform3D<double> relativeTransformCalc(Frame::Ptr targetFrame, State &state)
+{
+    // Make "helper" transformations
+    auto frameBaseTGoal = Kinematics::frameTframe(globals::robot->getBase(), targetFrame.get(), state);
+    auto frameTcpTRobotTcp = Kinematics::frameTframe(globals::graspTcp.get(), globals::robotTcp.get(), state);
+    // get grasp frame in robot tool frame
+    auto relative = frameBaseTGoal * frameTcpTRobotTcp;
+    return relative;
+}
+
 bool checkCollisions(Device::Ptr device, const State &state, const CollisionDetector &detector, const Q &q) {
 	State testState = state;
 	CollisionDetector::QueryResult data;
