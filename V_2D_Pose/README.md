@@ -7,9 +7,9 @@ mkdir build
 mkdir t
 cd build
 cmake ..
-make -j
+make -j2
 cd ../t
-./../build/create_templates_cad ../files/doggo.ply --no-depth --no-cloud -r 650,700,750--lat-begin 45 --lat-end 80 --lon-begin 0 --lon-end 360 --fov 45.5 --bc 1,0,0 -t 1 -s 4 -v
-cd ../build
-./linemod ../t/ ../files/scene.png -t 50 -p 3
+./../build/create_templates_cad ../files/doggy.ply --no-depth --no-cloud -r 0.5,0.8,1.1,1.4 --lat-begin 45 --lat-end 80 --lon-begin 0 --lon-end 360 --fov 45.5 --bc 1,0,0 -t 1 -s 4 -v
+cd ..
+./build/linemod t/ files/scene.png -t 50 -p 3
 ```

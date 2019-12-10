@@ -1,0 +1,1 @@
+This is sample code for RobWorkStudio plugin. Code was added here for reference. 
