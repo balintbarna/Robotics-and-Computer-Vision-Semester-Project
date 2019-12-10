@@ -17,7 +17,7 @@ namespace imager
     {
         if (globals::framegrabber25D != NULL)
         {
-            for( int i = 0; i < globals::cameras25D.size(); i ++)
+            for(size_t i = 0; i < globals::cameras25D.size(); i++)
             {
                 // Get the image as a RW image
                 Frame* cameraFrame25D = globals::wc->findFrame(globals::cameras25D[i]); // "Camera");
@@ -51,7 +51,7 @@ namespace imager
     {
         if (globals::framegrabber != NULL)
         {
-            for( int i = 0; i < globals::cameras.size(); i ++)
+            for(size_t i = 0; i < globals::cameras.size(); i++)
             {
                 // Get the image as a RW image
                 Frame* cameraFrame = globals::wc->findFrame(globals::cameras[i]); // "Camera");

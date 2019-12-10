@@ -150,8 +150,6 @@ void SamplePlugin::btnPressed() {
 		globals::robot->setQ(from, globals::state);
 		Kinematics::gripFrame(globals::dog.get(), globals::graspTcp.get(), globals::state);
 		setCurrentState();
-        double extend = 0.05;
-        double maxTime = 60;
         rw::math::Math::seed();
 		cout<<"calculating path"<<endl;
         rrtconnect::test_rrt(from, to);

@@ -175,7 +175,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 		{
 			tempPickup = robot->getQ(collisionFreeStates[0]);
 		}
-		int statesSize = collisionFreeStates.size();
+		auto statesSize = collisionFreeStates.size();
 		if(goal != NULL)
 		{
 			// place

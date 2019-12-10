@@ -120,7 +120,7 @@ void test_rrt(Q from, Q to) {
             double distance = 0;
 
             // STARTS FROM SECOND POSE
-            for (int i = 1; i < path.size(); i++)
+            for (size_t i = 1; i < path.size(); i++)
             {
                 distance += sqrt(pow((path.at(i)(0)-path.at(i-1)(0)),2)+pow((path.at(i)(1)-path.at(i-1)(1)),2)+pow((path.at(i)(2)-path.at(i-1)(2)),2)+pow((path.at(i)(3)-path.at(i-1)(3)),2)+pow((path.at(i)(4)-path.at(i-1)(4)),2)+pow((path.at(i)(5)-path.at(i-1)(5)),2));
 
