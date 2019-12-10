@@ -87,6 +87,8 @@ int main(int argc, const char** argv) {
   // Training data to be loaded for the 2D matcher
   std::vector<Mat> templates;
   std::vector<cv::Point> offset;
+  cout<<"reading and cropping templates"<<endl;
+  // SKIP FIRST FAULTY IMAGE
   for(int cnt = 1;;cnt++) {
     // Get RGB template
     char tfile[1024];
@@ -96,7 +98,6 @@ int main(int argc, const char** argv) {
     if(t.empty())
       break;
     
-    cout<<"file read, cropping"<<endl;
 
     Rect win = autocrop(t);
 	
@@ -138,8 +139,25 @@ int main(int argc, const char** argv) {
     Mat img = imread(ipath[image_index], IMREAD_UNCHANGED); // imread(po.getValue("image"), IMREAD_UNCHANGED);
     COVIS_ASSERT_MSG(!img.empty(), "Cannot read test image " << po.getValue("image") << "!");
 
-    cv::imshow("scene", img);
-    cv::waitKey();
+    for(int y=0;y<img.rows;y++)
+    {
+      for(int x=0;x<img.cols;x++)
+      {
+          // get pixel
+          Vec3b &c = img.at<Vec3b>(Point(x,y));
+
+          // ... do something to the color ....
+          int dif = 40;
+          for(int i = 0; i < 3; i++)
+          {
+            int newnum = c[i] * 1.2 + dif;
+            if(newnum > 255) c[i] = 255;
+            else c[i] = newnum;
+          }
+      }
+    }
+    // cv::imshow("scene", img);
+    // cv::waitKey();
 		    
     std::vector<Mat> sources;
     sources.push_back(img.clone());
@@ -155,25 +173,30 @@ int main(int argc, const char** argv) {
       continue;
     }
     
-    int i = 0;
-    int templateIndex = atoi(matches[i].class_id.c_str());
-    cv::imshow("temp", templates[templateIndex]);
+    for(int i = 0; i < 10 && i < matches.size(); i++)
+    {
+      Mat matched = img.clone();
+      int templateId = atoi(matches[i].class_id.c_str());
+      cout<<"TemplateId:"<<templateId<<endl;
+      int templateIndex = templateId -1;
+      cv::imshow("temp", templates[templateIndex]);
 
-    auto center = offset[templateIndex];
-    center.x /=2;
-    center.y /=2;
+      auto center = offset[templateIndex];
+      center.x /=2;
+      center.y /=2;
 
-    circle(img, cv::Point( matches[i].x+center.x, matches[i].y+center.y), 8, cv::Scalar(0, 255, 0) , -1 );
+      circle(matched, cv::Point( matches[i].x+center.x, matches[i].y+center.y), 8, cv::Scalar(0, 255, 0) , -1 );
 
-    char pfile[1024];
-    sprintf(pfile, "/template%04i_pose.txt",  atoi(matches[i].class_id.c_str()) );
-    Eigen::Matrix4f m;
-    covis::util::loadEigen(tpath + std::string(pfile), m);
+      char pfile[1024];
+      sprintf(pfile, "/template%04i_pose.txt", templateId);
+      Eigen::Matrix4f m;
+      covis::util::loadEigen(tpath + std::string(pfile), m);
 
-    std::cout << m << std::endl;
+      std::cout << m << std::endl;
 
-    cv::imshow( "img", img );
-    cv::waitKey(0);
+      cv::imshow( "matched", matched );
+      cv::waitKey();
+    }
   }
   return 0;
 }
