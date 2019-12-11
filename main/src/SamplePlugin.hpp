@@ -33,30 +33,6 @@
 
 #include <functional>
 
-
-using namespace rw::common;
-using namespace rw::graphics;
-using namespace rw::kinematics;
-using namespace rw::loaders;
-using namespace rw::models;
-using namespace rw::sensor;
-using namespace rwlibs::opengl;
-using namespace rwlibs::simulation;
-
-using namespace std;
-using namespace rw::math;
-using namespace rw::pathplanning;
-using namespace rw::proximity;
-using namespace rw::trajectory;
-using namespace rwlibs::pathplanners;
-using namespace rwlibs::proximitystrategies;
-
-
-using namespace rws;
-
-using namespace std::placeholders;
-
-
 class SamplePlugin: public rws::RobWorkStudioPlugin, private Ui::SamplePlugin
 {
 Q_OBJECT

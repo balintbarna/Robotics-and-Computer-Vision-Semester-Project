@@ -1,0 +1,8 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define PATH_ROOT "@ROOT@"
+#define PATH_SOURCE "@PATH_SOURCE@"
+#define PATH_RESOURCE "@PATH_RESOURCE@"
+
+#endif /*CONFIG_H*/

@@ -39,6 +39,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="_btn_detect">
+        <property name="text">
+         <string>Detect</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="_spinLabel">
         <property name="text">
          <string>Pos num to try</string>
