@@ -38,19 +38,19 @@ namespace pointcloud
 
     // filtering parameters
     float plane_threshold = 0.02f;
-    float leafSize = 0.005f; // (distance between | size of) voxels
-    float outlier_neighbour_mult = 10000.0f; // when searching for outliers, this times leafSize is the radius of neighbours
-    float smoothing_neighbour_mult = 1.5f; // when smoothing, this times leafSize is the radius for neighbours that are used in smoothing
-    float feature_neighbour_mult = 40.0f; // when computing features, this times leafSize is the radious for neighbours included in feature
+    float voxel_size = 0.005f; // (distance between | size of) voxels
+    float outlier_neighbour_mult = 10000.0f; // when searching for outliers, this times voxel_size is the radius of neighbours
+    float smoothing_neighbour_mult = 2.0f; // when smoothing, this times voxel_size is the radius for neighbours that are used in smoothing
+    float feature_neighbour_mult = 4.0f; // when computing features, this times voxel_size is the radious for neighbours included in feature
     int neighbour_for_normal = 20; // this many neighbours are included in normal calculation
 
     float xmin = -0.3f, xmax = 0.3f;
-    float ymin = -0.3f, ymax = 0.3f;
+    float ymin = -0.1f, ymax = 0.3f;
     float zmin = -1.2f, zmax = -0.7f;
     // Set RANSAC parameters
-    const size_t global_ransac_iter = 2000; // global ransac does this many iterations
+    const size_t global_ransac_iter = 10000; // global ransac does this many iterations
     const size_t local_ransac_iter = 50; // local ipc does this many iteractions
-    const float dist_threshold = leafSize * 4;
+    const float dist_threshold = voxel_size * 2;
     const float thressq = dist_threshold * dist_threshold;
 
     #pragma region IO
@@ -113,7 +113,7 @@ namespace pointcloud
     {
         VoxelGrid<PointIn> vg;
         vg.setInputCloud(input_cloud);
-        vg.setLeafSize (leafSize, leafSize, leafSize);
+        vg.setLeafSize (voxel_size, voxel_size, voxel_size);
         vg.filter(*output_cloud);
     }
 
@@ -122,7 +122,7 @@ namespace pointcloud
         StatisticalOutlierRemoval<PointIn> sor;
         sor.setInputCloud(input_cloud);
         sor.setMeanK(30);
-        sor.setStddevMulThresh(outlier_neighbour_mult*leafSize);
+        sor.setStddevMulThresh(outlier_neighbour_mult*voxel_size);
         sor.filter(*output_cloud);
     }
 
@@ -169,7 +169,7 @@ namespace pointcloud
         mls.setInputCloud (input_cloud);
         mls.setPolynomialOrder (2);
         mls.setSearchMethod (tree);
-        mls.setSearchRadius (leafSize*smoothing_neighbour_mult);
+        mls.setSearchRadius (voxel_size*smoothing_neighbour_mult);
         mls.process (*output_cloud);
     }
 
@@ -215,9 +215,6 @@ namespace pointcloud
             << " data points (" << pcl::getFieldsList (*input_object) << ")."
             <<endl;
 
-        planeRemoval(input_scene, input_scene);
-        // show("After plane removal", input_scene, input_object);
-
         spatialFilter(input_scene, input_scene);
         // show("After spatial filter", input_scene, input_object);
 
@@ -225,8 +222,11 @@ namespace pointcloud
         voxelGrid(input_object, input_object);
         show("After voxeling", input_scene, input_object);
 
+        planeRemoval(input_scene, input_scene);
+        // show("After plane removal", input_scene, input_object);
+
         outlierRemoval(input_scene, input_scene);
-        show("After outlier removal", input_scene, input_object);
+        // show("After outlier removal", input_scene, input_object);
 
         // smoothing(input_scene, output_scene);
         // smoothing(input_object, output_object);
@@ -287,7 +287,7 @@ namespace pointcloud
         ScopeTime t("Shape features");
         
         SpinImageEstimation<PointT,PointT,FeatureT> spin;
-        spin.setRadiusSearch(leafSize * feature_neighbour_mult);
+        spin.setRadiusSearch(voxel_size * feature_neighbour_mult);
         
         spin.setInputCloud(cloud);
         spin.setInputNormals(cloud);
