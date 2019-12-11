@@ -20,6 +20,10 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/spin_image.h>
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
 
 #include "imager.hpp"
 #include "config.h"
@@ -33,17 +37,23 @@ namespace pointcloud
     typedef Histogram<153> FeatureT;
 
     // filtering parameters
-    float leafSize = 0.01f;
-    float outlier_neighbour_mult = 2.0f;
-    float smoothing_neighbour_mult = 1.5f;
-    float feature_neighbour_mult = 30.0f;
-    float zmin = -1.0f, zmax = 0.0f;
+    float plane_threshold = 0.02f;
+    float leafSize = 0.005f; // (distance between | size of) voxels
+    float outlier_neighbour_mult = 10000.0f; // when searching for outliers, this times leafSize is the radius of neighbours
+    float smoothing_neighbour_mult = 1.5f; // when smoothing, this times leafSize is the radius for neighbours that are used in smoothing
+    float feature_neighbour_mult = 40.0f; // when computing features, this times leafSize is the radious for neighbours included in feature
+    int neighbour_for_normal = 20; // this many neighbours are included in normal calculation
+
+    float xmin = -0.3f, xmax = 0.3f;
+    float ymin = -0.3f, ymax = 0.3f;
+    float zmin = -1.2f, zmax = -0.7f;
     // Set RANSAC parameters
-    const size_t global_ransac_iter = 10000;
-    const size_t local_ransac_iter = 50;
-    const float dist_threshold = leafSize / 5;
+    const size_t global_ransac_iter = 2000; // global ransac does this many iterations
+    const size_t local_ransac_iter = 50; // local ipc does this many iteractions
+    const float dist_threshold = leafSize * 4;
     const float thressq = dist_threshold * dist_threshold;
 
+    #pragma region IO
     PointCloud<PointIn>::Ptr capture_pointcloud()
     {
         vector<rw::geometry::PointCloud> clouds = imager::get25DImage();
@@ -70,6 +80,34 @@ namespace pointcloud
 
         return object;
     }
+    #pragma endregion
+
+    #pragma region FILTER
+    void planeRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr &output_cloud)
+	{
+		pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+		pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+		// Create the segmentation object
+		pcl::SACSegmentation<pcl::PointXYZ> seg;
+		// Optional
+		seg.setOptimizeCoefficients (true);
+		// Mandatory
+		seg.setModelType (pcl::SACMODEL_PLANE);
+		seg.setMethodType (pcl::SAC_RANSAC);
+		seg.setDistanceThreshold (plane_threshold);
+		seg.setInputCloud(input_cloud);
+		seg.segment (*inliers, *coefficients);
+		if (inliers->indices.size () == 0)
+		{
+			PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+		}
+		// pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+		pcl::ExtractIndices<pcl::PointXYZ> extract;
+		extract.setInputCloud(input_cloud);
+		extract.setIndices(inliers);
+		extract.setNegative(true);
+		extract.filter(*output_cloud);
+	}
 
     void voxelGrid( PointCloud<PointIn>::Ptr input_cloud, PointCloud<PointIn>::Ptr &output_cloud )
     {
@@ -83,20 +121,42 @@ namespace pointcloud
     {
         StatisticalOutlierRemoval<PointIn> sor;
         sor.setInputCloud(input_cloud);
-        sor.setMeanK(50);
+        sor.setMeanK(30);
         sor.setStddevMulThresh(outlier_neighbour_mult*leafSize);
         sor.filter(*output_cloud);
     }
 
     void spatialFilter( PointCloud<PointIn>::Ptr input_cloud, PointCloud<PointIn>::Ptr &output_cloud )
     {
-        PassThrough<PointIn> pass;
-        pass.setInputCloud (input_cloud);
-        pass.setFilterFieldName ("z");
-        pass.setFilterLimits (zmin, zmax);
-        //pass.setFilterLimitsNegative (true);
-        pass.filter (*output_cloud);
+        PassThrough<PointIn> filter_x;
+		filter_x.setInputCloud(input_cloud);
+		filter_x.setFilterFieldName("x");
+		filter_x.setFilterLimits(xmin, xmax);
+		filter_x.filter(*output_cloud);
+			
+		PassThrough<PointIn> filter_y;
+		filter_y.setInputCloud(input_cloud);
+		filter_y.setFilterFieldName("y");
+		filter_y.setFilterLimits(ymin, ymax);
+		filter_y.filter(*output_cloud);
 
+		PassThrough<PointIn> filter_z;
+		filter_z.setInputCloud(input_cloud);
+		filter_z.setFilterFieldName("z");
+		filter_z.setFilterLimits(zmin, zmax);
+		filter_z.filter(*output_cloud);
+    }
+
+    void fake_smoothing(PointCloud<PointIn>::Ptr input_cloud, PointCloud<PointT>::Ptr &output_cloud)
+    {
+        for(auto &pixel : *input_cloud)
+        {
+            PointT nu;
+            nu.x = pixel.x;
+            nu.y = pixel.y;
+            nu.z = pixel.z;
+            output_cloud->push_back(nu);
+        }
     }
 
     void smoothing(PointCloud<PointIn>::Ptr input_cloud, PointCloud<PointT>::Ptr &output_cloud)
@@ -117,6 +177,7 @@ namespace pointcloud
     {
         using namespace visualization;
         PCLVisualizer v(title);
+	    v.addCoordinateSystem();
         v.addPointCloud<PointIn>(object, PointCloudColorHandlerCustom<PointIn>(object, 0, 255, 0), "object");
         v.addPointCloud<PointIn>(scene, PointCloudColorHandlerCustom<PointIn>(scene, 255, 0, 0), "scene");
         v.spin();
@@ -126,6 +187,7 @@ namespace pointcloud
     {
         using namespace visualization;
         PCLVisualizer v(title);
+	    v.addCoordinateSystem();
         v.addPointCloud<PointT>(object, PointCloudColorHandlerCustom<PointT>(object, 0, 255, 0), "object");
         v.addPointCloud<PointT>(scene, PointCloudColorHandlerCustom<PointT>(scene, 255, 0, 0), "scene");
         v.spin();
@@ -143,29 +205,46 @@ namespace pointcloud
         std::cout << "Min y: " << minPt.y << std::endl;
         std::cout << "Min z: " << minPt.z << std::endl;
 
-        cerr << "PointCloud before filtering: " 
+        cout << "Scene before filtering: " 
             << input_scene->width * input_scene->height 
             << " data points (" << pcl::getFieldsList (*input_scene) << ")."
             <<endl;
 
-        voxelGrid(input_scene, input_scene);
-        voxelGrid(input_object, input_object);
-        // show("After voxeling", input_scene, input_object);
+        cout << "Object before filtering: " 
+            << input_object->width * input_object->height 
+            << " data points (" << pcl::getFieldsList (*input_object) << ")."
+            <<endl;
 
-        outlierRemoval( input_scene, input_scene );
-        // show("After outlier removal", input_scene, input_object);
+        planeRemoval(input_scene, input_scene);
+        // show("After plane removal", input_scene, input_object);
 
-        spatialFilter( input_scene, input_scene );
+        spatialFilter(input_scene, input_scene);
         // show("After spatial filter", input_scene, input_object);
 
-        smoothing(input_scene, output_scene);
-        smoothing(input_object, output_object);
+        voxelGrid(input_scene, input_scene);
+        voxelGrid(input_object, input_object);
+        show("After voxeling", input_scene, input_object);
+
+        outlierRemoval(input_scene, input_scene);
+        show("After outlier removal", input_scene, input_object);
+
+        // smoothing(input_scene, output_scene);
+        // smoothing(input_object, output_object);
+        fake_smoothing(input_scene, output_scene);
+        fake_smoothing(input_object, output_object);
         // show("After smoothing", output_scene, output_object);
 
-        std::cerr << "PointCloud after filtering: " << input_scene->width * input_scene->height 
-            << " data points (" << pcl::getFieldsList (*input_scene) << ")." << endl;
-    }
+        std::cout << "Scene after filtering: " 
+            << output_scene->width * output_scene->height 
+            << " data points (" << pcl::getFieldsList (*output_scene) << ")." << endl;
 
+        std::cout << "Object after filtering: " 
+            << output_object->width * output_object->height 
+            << " data points (" << pcl::getFieldsList (*output_object) << ")." << endl;
+    }
+    #pragma endregion
+
+    #pragma region GLOBAL
     inline float dist_sq(const FeatureT& query, const FeatureT& target)
     {
         float result = 0.0;
@@ -197,7 +276,7 @@ namespace pointcloud
     {
         ScopeTime t("Surface normals");
         NormalEstimation<PointT,PointT> ne;
-        ne.setKSearch(10);
+        ne.setKSearch(neighbour_for_normal);
         
         ne.setInputCloud(cloud);
         ne.compute(*cloud);
@@ -217,13 +296,11 @@ namespace pointcloud
 
     Correspondences compute_correspondances(PointCloud<FeatureT>::Ptr &scene_feature, PointCloud<FeatureT>::Ptr &object_feature)
     {
+        ScopeTime t("Feature matches");
         Correspondences corr(object_feature->size());
-        {
-            ScopeTime t("Feature matches");
-            for(size_t i = 0; i < object_feature->size(); ++i) {
-                corr[i].index_query = i;
-                nearest_feature(object_feature->points[i], *scene_feature, corr[i].index_match, corr[i].distance);
-            }
+        for(size_t i = 0; i < object_feature->size(); ++i) {
+            corr[i].index_query = i;
+            nearest_feature(object_feature->points[i], *scene_feature, corr[i].index_match, corr[i].distance);
         }
         return corr;
     }
@@ -340,7 +417,9 @@ namespace pointcloud
         Matrix4f pose = Matrix4f::Identity();
         global_ransac(tree, pose, scene, object, object_aligned, corr);
     }
+    #pragma endregion
 
+    #pragma region LOCAL
     void local_align(PointCloud<PointT>::Ptr scene, PointCloud<PointT>::Ptr object, PointCloud<PointT>::Ptr object_aligned)
     {
         using namespace std;
@@ -405,6 +484,7 @@ namespace pointcloud
             cout << "RMSE: " << rmse << endl;
         } // End timing
     }
+    #pragma endregion
 }
 
 #endif /*PCL_FUNCTIONS_HPP*/

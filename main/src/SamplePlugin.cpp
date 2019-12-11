@@ -17,6 +17,10 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/spin_image.h>
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
 
 #include "SamplePlugin.hpp"
 #include "globals.hpp"
@@ -212,23 +216,23 @@ void SamplePlugin::btnPressed() {
 		auto object = load_object();
 		pointcloud::show("Before", scene, object);
     
-		PointCloud<PointT>::Ptr object_smooth(new PointCloud<PointT>);
-		PointCloud<PointT>::Ptr scene_smooth(new PointCloud<PointT>);
+		PointCloud<PointT>::Ptr object_processed(new PointCloud<PointT>);
+		PointCloud<PointT>::Ptr scene_processed(new PointCloud<PointT>);
 
-		preprocess(scene, scene_smooth, object, object_smooth);
+		preprocess(scene, scene_processed, object, object_processed);
 
-		pointcloud::show("After preprocess", scene_smooth, object_smooth);
+		pointcloud::show("After preprocess", scene_processed, object_processed);
 
 
 		PointCloud<PointT>::Ptr object_aligned(new PointCloud<PointT>);
-		global_align(scene_smooth, object_smooth, object_aligned);
+		global_align(scene_processed, object_processed, object_aligned);
 
-		pointcloud::show("After global estimate", scene_smooth, object_aligned);
+		pointcloud::show("After global estimate", scene_processed, object_aligned);
 
 		PointCloud<PointT>::Ptr object_local_aligned(new PointCloud<PointT>);
-		local_align(scene_smooth, object_aligned, object_local_aligned);
+		local_align(scene_processed, object_aligned, object_local_aligned);
 
-		pointcloud::show("After local estimate", scene_smooth, object_local_aligned);
+		pointcloud::show("After local estimate", scene_processed, object_local_aligned);
 	}
 	else if( obj==_btn_im ){
 		imager::getImage(_im_label);
