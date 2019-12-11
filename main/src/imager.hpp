@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "globals.hpp"
+#include "config.h"
 
 namespace imager
 {
@@ -53,9 +54,12 @@ namespace imager
     {
         vector<rw::geometry::PointCloud> clouds = get25DImage();
 
+
         for(int i = 0; i < clouds.size(); i++)
         {       
-            std::ofstream output(globals::cameras25D[i] + ".pcd");
+            string path(PATH_GENERATE);
+            path.append(globals::cameras25D[i] + ".pcd");
+            std::ofstream output(path);
             output << "# .PCD v.5 - Point Cloud Data file format\n";
             output << "FIELDS x y z\n";
             output << "SIZE 4 4 4\n";
@@ -93,7 +97,9 @@ namespace imager
                 cv::flip(image, imflip, 1);
                 cv::cvtColor( imflip, imflip_mat, COLOR_RGB2BGR );
 
-                cv::imwrite(globals::cameras[i] + ".png", imflip_mat );
+                string path(PATH_GENERATE);
+                path.append(globals::cameras[i] + ".png");
+                cv::imwrite(path, imflip_mat);
 
                 // Show in QLabel
                 QImage img(imflip.data, imflip.cols, imflip.rows, imflip.step, QImage::Format_RGB888);
