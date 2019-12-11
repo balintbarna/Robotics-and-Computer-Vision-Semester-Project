@@ -42,16 +42,19 @@ namespace pointcloud
     float outlier_neighbour_mult = 10000.0f; // when searching for outliers, this times voxel_size is the radius of neighbours
     float smoothing_neighbour_mult = 2.0f; // when smoothing, this times voxel_size is the radius for neighbours that are used in smoothing
     float feature_neighbour_mult = 4.0f; // when computing features, this times voxel_size is the radious for neighbours included in feature
+    float feature_radius = 0.2f;
     int neighbour_for_normal = 20; // this many neighbours are included in normal calculation
 
     float xmin = -0.3f, xmax = 0.3f;
-    float ymin = -0.1f, ymax = 0.3f;
+    float ymin = -0.15f, ymax = 0.3f;
     float zmin = -1.2f, zmax = -0.7f;
     // Set RANSAC parameters
     const size_t global_ransac_iter = 10000; // global ransac does this many iterations
-    const size_t local_ransac_iter = 50; // local ipc does this many iteractions
-    const float dist_threshold = voxel_size * 2;
-    const float thressq = dist_threshold * dist_threshold;
+    const size_t local_ransac_iter = 200; // local ipc does this many iteractions
+    const float dist_threshold_global = 0.02;
+    const float dist_threshold_local = 0.01;
+    const float thressq_global = dist_threshold_global * dist_threshold_global;
+    const float thressq_local = dist_threshold_local * dist_threshold_local;
 
     #pragma region IO
     PointCloud<PointIn>::Ptr capture_pointcloud()
@@ -287,7 +290,7 @@ namespace pointcloud
         ScopeTime t("Shape features");
         
         SpinImageEstimation<PointT,PointT,FeatureT> spin;
-        spin.setRadiusSearch(voxel_size * feature_neighbour_mult);
+        spin.setRadiusSearch(feature_radius);
         
         spin.setInputCloud(cloud);
         spin.setInputNormals(cloud);
@@ -355,7 +358,7 @@ namespace pointcloud
             size_t inliers = 0;
             float rmse = 0;
             for(size_t j = 0; j < distsq.size(); ++j)
-                if(distsq[j][0] <= thressq)
+                if(distsq[j][0] <= thressq_global)
                     ++inliers, rmse += distsq[j][0];
             rmse = sqrtf(rmse / inliers);
             
@@ -371,27 +374,9 @@ namespace pointcloud
                 pose = T;
             }
         }
-        
-        transformPointCloud(*object, *object_aligned, pose);
-        
-        // Compute inliers and RMSE
-        vector<vector<int> > idx;
-        vector<vector<float> > distsq;
-        tree.nearestKSearch(*object_aligned, std::vector<int>(), 1, idx, distsq);
-        size_t inliers = 0;
-        float rmse = 0;
-        for(size_t i = 0; i < distsq.size(); ++i)
-            if(distsq[i][0] <= thressq)
-                ++inliers, rmse += distsq[i][0];
-        rmse = sqrtf(rmse / inliers);
-    
-        // Print pose
-        cout << "Got the following pose:" << endl << pose << endl;
-        cout << "Inliers: " << inliers << "/" << object->size() << endl;
-        cout << "RMSE: " << rmse << endl;
     }
 
-    void global_align(PointCloud<PointT>::Ptr scene, PointCloud<PointT>::Ptr object, PointCloud<PointT>::Ptr object_aligned)
+    void global_align(PointCloud<PointT>::Ptr scene, PointCloud<PointT>::Ptr object, PointCloud<PointT>::Ptr object_aligned, Eigen::Matrix4f &pose)
     {
         using namespace std;
         using namespace pcl;
@@ -414,13 +399,30 @@ namespace pointcloud
         tree.setInputCloud(scene);
         
         // Start RANSAC
-        Matrix4f pose = Matrix4f::Identity();
         global_ransac(tree, pose, scene, object, object_aligned, corr);
+        
+        transformPointCloud(*object, *object_aligned, pose);
+        
+        // Compute inliers and RMSE
+        vector<vector<int> > idx;
+        vector<vector<float> > distsq;
+        tree.nearestKSearch(*object_aligned, std::vector<int>(), 1, idx, distsq);
+        size_t inliers = 0;
+        float rmse = 0;
+        for(size_t i = 0; i < distsq.size(); ++i)
+            if(distsq[i][0] <= thressq_global)
+                ++inliers, rmse += distsq[i][0];
+        rmse = sqrtf(rmse / inliers);
+    
+        // Print pose
+        cout << "Got the following pose:" << endl << pose << endl;
+        cout << "Inliers: " << inliers << "/" << object->size() << endl;
+        cout << "RMSE: " << rmse << endl;
     }
     #pragma endregion
 
     #pragma region LOCAL
-    void local_align(PointCloud<PointT>::Ptr scene, PointCloud<PointT>::Ptr object, PointCloud<PointT>::Ptr object_aligned)
+    void local_align(PointCloud<PointT>::Ptr scene, PointCloud<PointT>::Ptr object, Eigen::Matrix4f &pose)
     {
         using namespace std;
         using namespace pcl;
@@ -435,7 +437,6 @@ namespace pointcloud
         tree.setInputCloud(scene);
         
         // Start ICP
-        Matrix4f pose = Matrix4f::Identity();
         {
             ScopeTime t("ICP");
             cout << "Starting ICP..." << endl;
@@ -443,13 +444,13 @@ namespace pointcloud
                 // 1) Find closest points
                 vector<vector<int> > idx;
                 vector<vector<float> > distsq;
-                tree.nearestKSearch(*object_aligned, std::vector<int>(), 1, idx, distsq);
+                tree.nearestKSearch(*object, std::vector<int>(), 1, idx, distsq);
                 
                 // Threshold and create indices for object/scene and compute RMSE
                 vector<int> idxobj;
                 vector<int> idxscn;
                 for(size_t j = 0; j < idx.size(); ++j) {
-                    if(distsq[j][0] <= thressq) {
+                    if(distsq[j][0] <= thressq_local) {
                         idxobj.push_back(j);
                         idxscn.push_back(idx[j][0]);
                     }
@@ -458,10 +459,10 @@ namespace pointcloud
                 // 2) Estimate transformation
                 Matrix4f T;
                 TransformationEstimationSVD<PointNormal,PointNormal> est;
-                est.estimateRigidTransformation(*object_aligned, idxobj, *scene, idxscn, T);
+                est.estimateRigidTransformation(*object, idxobj, *scene, idxscn, T);
                 
                 // 3) Apply pose
-                transformPointCloud(*object_aligned, *object_aligned, T);
+                transformPointCloud(*object, *object, T);
                 
                 // 4) Update result
                 pose = T * pose;
@@ -470,11 +471,11 @@ namespace pointcloud
             // Compute inliers and RMSE
             vector<vector<int> > idx;
             vector<vector<float> > distsq;
-            tree.nearestKSearch(*object_aligned, std::vector<int>(), 1, idx, distsq);
+            tree.nearestKSearch(*object, std::vector<int>(), 1, idx, distsq);
             size_t inliers = 0;
             float rmse = 0;
             for(size_t i = 0; i < distsq.size(); ++i)
-                if(distsq[i][0] <= thressq)
+                if(distsq[i][0] <= thressq_local)
                     ++inliers, rmse += distsq[i][0];
             rmse = sqrtf(rmse / inliers);
         
@@ -485,6 +486,32 @@ namespace pointcloud
         } // End timing
     }
     #pragma endregion
+
+    void do_3d_alignment(PointCloud<PointIn>::Ptr scene, PointCloud<PointIn>::Ptr object)
+    {
+        using namespace Eigen;
+        pointcloud::show("Before", scene, object);
+
+        PointCloud<PointT>::Ptr object_processed(new PointCloud<PointT>);
+        PointCloud<PointT>::Ptr scene_processed(new PointCloud<PointT>);
+
+        preprocess(scene, scene_processed, object, object_processed);
+
+        pointcloud::show("After preprocess", scene_processed, object_processed);
+
+
+        Matrix4f pose = Matrix4f::Identity();
+        PointCloud<PointT>::Ptr object_aligned(new PointCloud<PointT>);
+        global_align(scene_processed, object_processed, object_aligned, pose);
+
+        pointcloud::show("After global estimate", scene_processed, object_aligned);
+
+        local_align(scene_processed, object_aligned, pose);
+
+        pointcloud::show("After local estimate", scene_processed, object_aligned);
+        
+        cout<<"final pose"<<endl<<pose<<endl;
+    }
 }
 
 #endif /*PCL_FUNCTIONS_HPP*/

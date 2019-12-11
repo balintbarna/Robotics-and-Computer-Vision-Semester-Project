@@ -214,25 +214,7 @@ void SamplePlugin::btnPressed() {
 		using namespace pointcloud;
 		auto scene = capture_pointcloud();
 		auto object = load_object();
-		pointcloud::show("Before", scene, object);
-    
-		PointCloud<PointT>::Ptr object_processed(new PointCloud<PointT>);
-		PointCloud<PointT>::Ptr scene_processed(new PointCloud<PointT>);
-
-		preprocess(scene, scene_processed, object, object_processed);
-
-		pointcloud::show("After preprocess", scene_processed, object_processed);
-
-
-		PointCloud<PointT>::Ptr object_aligned(new PointCloud<PointT>);
-		global_align(scene_processed, object_processed, object_aligned);
-
-		pointcloud::show("After global estimate", scene_processed, object_aligned);
-
-		PointCloud<PointT>::Ptr object_local_aligned(new PointCloud<PointT>);
-		local_align(scene_processed, object_aligned, object_local_aligned);
-
-		pointcloud::show("After local estimate", scene_processed, object_local_aligned);
+		pointcloud::do_3d_alignment(scene, object);
 	}
 	else if( obj==_btn_im ){
 		imager::getImage(_im_label);
