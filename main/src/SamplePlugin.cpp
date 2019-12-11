@@ -214,7 +214,10 @@ void SamplePlugin::btnPressed() {
 		using namespace pointcloud;
 		auto scene = capture_pointcloud();
 		auto object = load_object();
-		pointcloud::do_3d_alignment(scene, object);
+		auto detected_pose = pointcloud::do_3d_alignment(scene, object);
+		globals::detected->moveTo(detected_pose, globals::state);
+		setCurrentState();
+
 	}
 	else if( obj==_btn_im ){
 		imager::getImage(_im_label);

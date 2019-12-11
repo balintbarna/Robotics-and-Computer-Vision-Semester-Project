@@ -85,6 +85,10 @@
 		<RPY> 117.7120106 20.2801915 172.4232837 </RPY> <Pos> -0.0473 -0.0915 -1.1255 </Pos>
 	</Frame>
 
+	<Frame name="ScannerDetected" refframe="Scanner25D" type="Movable" daf="true" >
+		<RPY> 0 0 0 </RPY> <Pos> 0 0 0 </Pos>
+	</Frame>
+
 <!-- Cameras -->
 
 	<Frame name="CamRef" refframe="WORLD" type="Movable">

@@ -49,7 +49,7 @@ namespace pointcloud
     float ymin = -0.15f, ymax = 0.3f;
     float zmin = -1.2f, zmax = -0.7f;
     // Set RANSAC parameters
-    const size_t global_ransac_iter = 10000; // global ransac does this many iterations
+    const size_t global_ransac_iter = 2000; // global ransac does this many iterations
     const size_t local_ransac_iter = 200; // local ipc does this many iteractions
     const float dist_threshold_global = 0.02;
     const float dist_threshold_local = 0.01;
@@ -487,7 +487,7 @@ namespace pointcloud
     }
     #pragma endregion
 
-    void do_3d_alignment(PointCloud<PointIn>::Ptr scene, PointCloud<PointIn>::Ptr object)
+    Transform3D<double> do_3d_alignment(PointCloud<PointIn>::Ptr scene, PointCloud<PointIn>::Ptr object)
     {
         using namespace Eigen;
         pointcloud::show("Before", scene, object);
@@ -500,17 +500,25 @@ namespace pointcloud
         pointcloud::show("After preprocess", scene_processed, object_processed);
 
 
-        Matrix4f pose = Matrix4f::Identity();
+        Matrix4f m = Matrix4f::Identity();
         PointCloud<PointT>::Ptr object_aligned(new PointCloud<PointT>);
-        global_align(scene_processed, object_processed, object_aligned, pose);
+        global_align(scene_processed, object_processed, object_aligned, m);
 
         pointcloud::show("After global estimate", scene_processed, object_aligned);
 
-        local_align(scene_processed, object_aligned, pose);
+        local_align(scene_processed, object_aligned, m);
 
         pointcloud::show("After local estimate", scene_processed, object_aligned);
         
-        cout<<"final pose"<<endl<<pose<<endl;
+        cout<<"final pose"<<endl<<m<<endl;
+        
+        Vector3D<> p(m(0,3),m(1,3),m(2,3));
+        Rotation3D<> r(
+            m(0,0),m(0,1),m(0,2),
+            m(1,0),m(1,1),m(1,2),
+            m(2,0),m(2,1),m(2,2));
+        Transform3D<> t(p,r);
+        return t;
     }
 }
 
