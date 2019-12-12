@@ -69,12 +69,16 @@
     	</Drawable>
 	</Frame>
 
-	<Frame name="DogMiddle" refframe="Dog" type="Movable" daf="true" >
-		<RPY> 0 0 0 </RPY> <Pos> 0 0.1 0 </Pos>
+	<Frame name="RealDogBase" refframe="Dog" type="Movable" daf="true" >
+		<RPY> 0 0 -90 </RPY> <Pos> 0 0 0 </Pos>
 	</Frame>
 
-	<Frame name="DogHead" refframe="Dog" type="Movable" daf="true" >
-		<RPY> 0 0 0 </RPY> <Pos> 0.1 0.15 0 </Pos>
+	<Frame name="DogMiddle" refframe="RealDogBase" type="Movable" daf="true" >
+		<RPY> 0 0 90 </RPY> <Pos> 0 0 0.1 </Pos>
+	</Frame>
+
+	<Frame name="DogHead" refframe="RealDogBase" type="Movable" daf="true" >
+		<RPY> 0 0 90 </RPY> <Pos> 0.1 0 0.15 </Pos>
 	</Frame>
 
 	<Frame name="GraspTarget" refframe="DogMiddle" type="Movable" daf="true" >
