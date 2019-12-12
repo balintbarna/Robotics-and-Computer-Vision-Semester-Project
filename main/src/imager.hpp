@@ -42,7 +42,7 @@ namespace imager
             {
                 // Get the image as a RW image
                 Frame* cameraFrame25D = globals::wc->findFrame(globals::cameras25D[i]); // "Camera");
-                globals::framegrabber25D->grab(cameraFrame25D, globals::state);
+                globals::framegrabber25D->grab(cameraFrame25D, globals::getState());
 
                 clouds.push_back(globals::framegrabber25D->getImage());
             }
@@ -85,7 +85,7 @@ namespace imager
             {
                 // Get the image as a RW image
                 Frame* cameraFrame = globals::wc->findFrame(globals::cameras[i]); // "Camera");
-                globals::framegrabber->grab(cameraFrame, globals::state);
+                globals::framegrabber->grab(cameraFrame, globals::getState());
 
                 const rw::sensor::Image* rw_image = &(globals::framegrabber->getImage());
 

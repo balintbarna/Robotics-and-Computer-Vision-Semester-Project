@@ -24,6 +24,19 @@ using namespace rwlibs::proximitystrategies;
 
 namespace rrtconnect
 {
+    struct RrtData
+    {
+        WorkCell::Ptr wc;
+        SerialDevice::Ptr robot;
+        Q from;
+        Q to;
+        double extend_start;
+        double extend_step;
+        double extend_max;
+
+        State state;
+        vector<State> *states;
+    };
 
     double bestDistance = 99999999;
     QPath bestPath;
@@ -96,7 +109,7 @@ QPath createPath(Q from, Q to,  double extend, double maxTime, State state)
     return path;
 }
 
-void test_rrt(Q from, Q to) {
+void test_rrt(RrtData data) {
 
     ofstream mydata;
     mydata.open("rrtPerfData.dat");
@@ -107,15 +120,16 @@ void test_rrt(Q from, Q to) {
 
     double MAXTIME = 60;
 
-    State startState = globals::state;
+    State &startState = data.state;
 
-    for (double extend = 0.02; extend <= 0.2; extend+=0.02)
+    for (double extend = data.extend_start; extend <= data.extend_max; extend+=data.extend_step)
     {
+        cout<<"extend:"<<extend<<endl;
         for(int trial = 0; trial < 10; trial++)
         {
             Timer t;
             t.resetAndResume();
-            QPath path = createPath(from, to, extend, MAXTIME, startState);
+            QPath path = createPath(data.from, data.to, extend, MAXTIME, startState);
             t.pause();
             double distance = 0;
 
@@ -135,7 +149,6 @@ void test_rrt(Q from, Q to) {
                 cout<<"found new best path, distance:"<<distance<<endl;
             }
         }
-        cout<<"extend:"<<extend<<endl;
     }
 
     mydata.close();
@@ -143,13 +156,12 @@ void test_rrt(Q from, Q to) {
     ofstream f;
 	f.open("bestRrtPath.dat");
     f << "x\ty\ty" << endl;
-    globals::states.clear();
     for(auto &q : bestPath)
     {
-        globals::robot->setQ(q, startState);
-        auto baseTdog = globals::robot->baseTframe(globals::dog.get(), startState);
+        data.robot->setQ(q, startState);
+        auto baseTdog = data.robot->baseTframe(globals::dog.get(), startState);
         f<<baseTdog.P()[0]<<"\t"<<baseTdog.P()[1]<<"\t"<<baseTdog.P()[2]<<endl;
-        globals::states.push_back(startState);
+        data.states->push_back(startState);
     }
     f.close();
     cout<<"saved best path"<<endl;

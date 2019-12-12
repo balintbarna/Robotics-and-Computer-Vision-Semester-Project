@@ -55,7 +55,6 @@ namespace globals
     using namespace rws;
 
     WorkCell::Ptr wc;
-    State state;
     RenderImage *textureRender, *bgRender;
     GLFrameGrabber* framegrabber;
     GLFrameGrabber25D* framegrabber25D;    
@@ -76,10 +75,20 @@ namespace globals
     MovableFrame::Ptr detected;
     vector<State> states;
 
+    State &getState()
+    {
+        auto s = states.size();
+        if(s == 0)
+        {
+            states.push_back(wc->getDefaultState());
+            return states[0];
+        }
+        return states[s - 1];
+    }
+
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)
     {
         wc = workcell;
-        state = wc->getDefaultState();
         auto studio = plugin->getRobWorkStudio();
 
         if (wc != NULL)

@@ -32,7 +32,7 @@ struct ReachData
 	MovableFrame::Ptr targetSide;
 	CollisionDetector::Ptr detector;
 	MovableFrame::Ptr goal;
-	State *state_ptr;
+	State state;
 	vector<State> *states_ptr;
 	int num_pos;
 };
@@ -145,7 +145,7 @@ int analyse_reachability(ReachData &data)
 	}
 
 	// get the default state
-	State state = *data.state_ptr;
+	State &state = data.state;
 	auto &states = *data.states_ptr;
 	data.gripper->setQ(Q(1, 0.035), state);
 
@@ -230,7 +230,6 @@ int analyse_reachability(ReachData &data)
 
 
 	states.insert(std::end(states), std::begin(bestStates), std::end(bestStates));
-	globals::robotRef->setTransform(bestRobotPose, *data.state_ptr);
 
 	return 0;
 }
