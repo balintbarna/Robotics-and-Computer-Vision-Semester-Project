@@ -163,10 +163,17 @@ void SamplePlugin::detect_dog()
 	auto scene = capture_pointcloud();
 	auto object = load_object();
 	auto detected_pose = pointcloud::do_3d_alignment(scene, object);
-	globals::detected->moveTo(detected_pose, globals::state);
+	State state = globals::getState();
+	globals::detected->moveTo(detected_pose, state);
+	globals::dogmiddle->attachTo(globals::detected.get(), state);
+	globals::doghead->attachTo(globals::detected.get(), state);
+	globals::states.push_back(state);
+	globals::states.push_back(state);
 }
 void SamplePlugin::analyze_reach()
 {
+	int rounds = _spinBox->value();
+	rounds = rounds == 0 ? 1 : rounds;
 	reach::ReachData rdata;
 	rdata.wc = globals::wc;
 	rdata.robot = globals::robot;
@@ -175,8 +182,8 @@ void SamplePlugin::analyze_reach()
 	rdata.targetSide = globals::doghead;
 	rdata.detector = globals::detector;
 	rdata.goal = globals::goal;
-	rdata.num_pos = _spinBox->value();
-	rdata.state_ptr = &globals::state;
+	rdata.num_pos = rounds;
+	rdata.state = globals::getState();
 	rdata.states_ptr = &globals::states;
 
 	reach::analyse_reachability(rdata);
@@ -186,21 +193,32 @@ void SamplePlugin::plan_path()
 	cout<<"preparing for calculating path"<<endl;
 	// pause playback
 	_timer->stop();
+
+	rrtconnect::RrtData data;
+	data.robot = globals::robot;
+	data.wc = globals::wc;
+	data.from = reach::bestPickupConf;
+	data.to = reach::bestPlaceConf;
+	data.extend_start = 0.02;
+	data.extend_max = 0.2;
+	data.extend_step = data.extend_start;
+	data.states = &globals::states;
+	data.state = globals::getState();
+	
 	// set up state
-	setDefaultState();
-	globals::gripper->setQ(Q(1, 0.045), globals::state);
-	globals::robotRef->moveTo(reach::bestRobotPose, globals::state);
-	Q from = reach::bestPickupConf;
-	Q to = reach::bestPlaceConf;
+	globals::gripper->setQ(Q(1, 0.045), data.state);
+	globals::robotRef->moveTo(reach::bestRobotPose, data.state);
+	globals::robot->setQ(data.from, data.state);
 	// rw::invkin::ClosedFormIKSolverUR::Ptr solver = ownedPtr(new rw::invkin::ClosedFormIKSolverUR(globals::robot, globals::state));
 	// auto toTarget = rrtconnect::relativeTransformCalc(globals::goal, globals::state);
 	// Q to = solver->solve(toTarget, globals::state)[0];
-	globals::robot->setQ(from, globals::state);
-	Kinematics::gripFrame(globals::dog.get(), globals::graspTcp.get(), globals::state);
+	Kinematics::gripFrame(globals::dog.get(), globals::graspTcp.get(), data.state);
 	setCurrentState();
+
 	rw::math::Math::seed();
 	cout<<"calculating path"<<endl;
-	rrtconnect::test_rrt(from, to);
+	rrtconnect::test_rrt(data);
+
 	cout<<"path calculated"<<endl;
 }
 
@@ -240,20 +258,26 @@ void SamplePlugin::btnPressed() {
 	else if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		globals::states.clear();
+		setDefaultState();
 		analyze_reach();
 		setCurrentState();
 	}
 	else if(obj==_btn_calcpath){
+		setDefaultState();
 		cout<<"plan"<<endl;
 		plan_path();
+		setCurrentState();
 	}
 	else if(obj == _btn_integrated)
 	{
 		cout<<"integrated"<<endl;
+		setDefaultState();
 		detect_dog();
+		setCurrentState();
 		analyze_reach();
+		setCurrentState();
 		plan_path();
+		setCurrentState();
 	}
 	else if( obj==_btn_im ){
 		imager::getImage(_im_label);
@@ -283,13 +307,13 @@ void SamplePlugin::timer()
 
 void SamplePlugin::setDefaultState()
 {
-	globals::state = globals::wc->getDefaultState();
+	globals::states.clear();
 	setCurrentState();
 }
 
 void SamplePlugin::setCurrentState()
 {
-	getRobWorkStudio()->setState(globals::state);
+	getRobWorkStudio()->setState(globals::getState());
 }
 
 void SamplePlugin::updatePlaybackState()
@@ -301,6 +325,6 @@ void SamplePlugin::updatePlaybackState()
 
 void SamplePlugin::stateChangedListener(const State& state)
 {
-	globals::state = state;
+	globals::getState() = state;
 }
 
