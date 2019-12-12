@@ -270,7 +270,9 @@ void SamplePlugin::btnPressed() {
 		cout<<"integrated"<<endl;
 		setDefaultState();
 		detect_dog();
+		setCurrentState();
 		analyze_reach();
+		setCurrentState();
 		plan_path();
 		setCurrentState();
 	}

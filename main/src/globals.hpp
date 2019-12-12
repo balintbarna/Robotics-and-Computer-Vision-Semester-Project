@@ -73,6 +73,7 @@ namespace globals
     MovableFrame::Ptr doghead;
     MovableFrame::Ptr goal;
     MovableFrame::Ptr detected;
+    MovableFrame::Ptr scanner;
     vector<State> states;
 
     State &getState()
@@ -155,6 +156,7 @@ namespace globals
             doghead = wc->findFrame<MovableFrame>("DogHead");
             goal = wc->findFrame<MovableFrame>("Goal");
             detected = wc->findFrame<MovableFrame>("ScannerDetected");
+            scanner = wc->findFrame<MovableFrame>("Scanner25D");
             robotTcp = wc->findFrame(robot->getName() + "." + "TCP");
         }
     }
