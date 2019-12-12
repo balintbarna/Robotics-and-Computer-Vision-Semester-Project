@@ -51,7 +51,7 @@
 	</Frame>
 
 	<Frame name="Goal" refframe="Table"  type="Movable" daf="true" >
-		<RPY> -90 0 90 </RPY> <Pos> 0.3 -0.5 0.211 </Pos>
+		<RPY> -90 0 90 </RPY> <Pos> 0.3 -0.5 0.22 </Pos>
 	</Frame>
 
 	<Frame name="Cylinder" refframe="Table"  type="Movable" daf="true" >
