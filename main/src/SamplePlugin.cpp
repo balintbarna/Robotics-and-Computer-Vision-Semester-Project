@@ -168,9 +168,12 @@ void SamplePlugin::detect_dog()
 	globals::dogmiddle->attachTo(globals::detected.get(), state);
 	globals::doghead->attachTo(globals::detected.get(), state);
 	globals::states.push_back(state);
+	globals::states.push_back(state);
 }
 void SamplePlugin::analyze_reach()
 {
+	int rounds = _spinBox->value();
+	rounds = rounds == 0 ? 1 : rounds;
 	reach::ReachData rdata;
 	rdata.wc = globals::wc;
 	rdata.robot = globals::robot;
@@ -179,7 +182,7 @@ void SamplePlugin::analyze_reach()
 	rdata.targetSide = globals::doghead;
 	rdata.detector = globals::detector;
 	rdata.goal = globals::goal;
-	rdata.num_pos = _spinBox->value();
+	rdata.num_pos = rounds;
 	rdata.state = globals::getState();
 	rdata.states_ptr = &globals::states;
 
