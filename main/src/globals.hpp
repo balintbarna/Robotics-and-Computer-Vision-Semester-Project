@@ -73,6 +73,7 @@ namespace globals
     MovableFrame::Ptr dogmiddle;
     MovableFrame::Ptr doghead;
     MovableFrame::Ptr goal;
+    MovableFrame::Ptr detected;
     vector<State> states;
 
     void init(WorkCell *workcell, RobWorkStudioPlugin *plugin)
@@ -144,6 +145,7 @@ namespace globals
             dogmiddle = wc->findFrame<MovableFrame>("DogMiddle");
             doghead = wc->findFrame<MovableFrame>("DogHead");
             goal = wc->findFrame<MovableFrame>("Goal");
+            detected = wc->findFrame<MovableFrame>("ScannerDetected");
             robotTcp = wc->findFrame(robot->getName() + "." + "TCP");
         }
     }

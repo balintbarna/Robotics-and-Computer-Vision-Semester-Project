@@ -37,6 +37,8 @@ using namespace covis;
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd/linemod.hpp>
 
+#include <random>
+
 using namespace cv;
 using namespace std;
 
@@ -138,7 +140,7 @@ int main(int argc, const char** argv) {
     cout<<"Matching image "<<image_index<<endl;
     Mat img = imread(ipath[image_index], IMREAD_UNCHANGED); // imread(po.getValue("image"), IMREAD_UNCHANGED);
     COVIS_ASSERT_MSG(!img.empty(), "Cannot read test image " << po.getValue("image") << "!");
-
+    // make image brighter
     for(int y=0;y<img.rows;y++)
     {
       for(int x=0;x<img.cols;x++)
@@ -156,46 +158,70 @@ int main(int argc, const char** argv) {
           }
       }
     }
-    // cv::imshow("scene", img);
-    // cv::waitKey();
-		    
-    std::vector<Mat> sources;
-    sources.push_back(img.clone());
-
-    std::vector< cv::linemod::Match > matches;
-
-    detector.match( sources, threshold, matches );
-
-    std::cout << "Number of matches: " << matches.size() << std::endl;
-    if(matches.size() < 1)
+    // add noise
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0,2.0);
+    for(double d = 0; d < 50; d+=0.2)
     {
-      std::cout<<"No matches, continuing..."<<std::endl;
-      continue;
-    }
-    
-    for(int i = 0; i < 10 && i < matches.size(); i++)
-    {
-      Mat matched = img.clone();
-      int templateId = atoi(matches[i].class_id.c_str());
-      cout<<"TemplateId:"<<templateId<<endl;
-      int templateIndex = templateId -1;
-      cv::imshow("temp", templates[templateIndex]);
+      cout<<"noiselevel:"<<d<<endl;
+      Mat scene = img.clone();
+      for(int y=0;y<scene.rows;y++)
+      {
+        for(int x=0;x<scene.cols;x++)
+        {
+          // get pixel
+          Vec3b &c = scene.at<Vec3b>(Point(x,y));
 
-      auto center = offset[templateIndex];
-      center.x /=2;
-      center.y /=2;
+          for(int i = 0; i < 3; i++)
+          {
+            double r = distribution(generator);
+            r *= d;
+            int newnum = c[i] + r;
+            if(newnum > 255) c[i] = 255;
+            else if (newnum < 0) c[i] = 0;
+            else c[i] = newnum;
+          }
+        }
+      }
+          
+      std::vector<Mat> sources;
+      sources.push_back(scene.clone());
 
-      circle(matched, cv::Point( matches[i].x+center.x, matches[i].y+center.y), 8, cv::Scalar(0, 255, 0) , -1 );
+      std::vector< cv::linemod::Match > matches;
 
-      char pfile[1024];
-      sprintf(pfile, "/template%04i_pose.txt", templateId);
-      Eigen::Matrix4f m;
-      covis::util::loadEigen(tpath + std::string(pfile), m);
+      detector.match( sources, threshold, matches );
 
-      std::cout << m << std::endl;
+      std::cout << "Number of matches: " << matches.size() << std::endl;
+      if(matches.size() < 1)
+      {
+        std::cout<<"No matches, continuing..."<<std::endl;
+        continue;
+      }
+      
+      for(int i = 0; i < 1 && i < matches.size(); i++)
+      {
+        Mat matched = scene.clone();
+        int templateId = atoi(matches[i].class_id.c_str());
+        cout<<"TemplateId:"<<templateId<<endl;
+        int templateIndex = templateId -1;
+        cv::imshow("temp", templates[templateIndex]);
 
-      cv::imshow( "matched", matched );
-      cv::waitKey();
+        auto center = offset[templateIndex];
+        center.x /=2;
+        center.y /=2;
+
+        circle(matched, cv::Point( matches[i].x+center.x, matches[i].y+center.y), 8, cv::Scalar(0, 255, 0) , -1 );
+
+        char pfile[1024];
+        sprintf(pfile, "/template%04i_pose.txt", templateId);
+        Eigen::Matrix4f m;
+        covis::util::loadEigen(tpath + std::string(pfile), m);
+
+        std::cout << m << std::endl;
+
+        cv::imshow( "matched", matched );
+        cv::waitKey();
+      }
     }
   }
   return 0;

@@ -1,9 +1,56 @@
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/convolution_3d.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/surface/mls.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/point_cloud.h>
+#include <pcl/common/time.h>
+#include <pcl/registration/icp.h>
+#include <pcl/registration/transformation_estimation_svd.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/common/random.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/spin_image.h>
+#include <pcl/registration/correspondence_rejection_sample_consensus.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+
 #include "SamplePlugin.hpp"
 #include "globals.hpp"
 #include "reachabilityAnalysis.hpp"
 #include "rrtconnect.hpp"
 #include "imager.hpp"
+#include "pcl_functions.hpp"
 
+
+using namespace rw::common;
+using namespace rw::graphics;
+using namespace rw::kinematics;
+using namespace rw::loaders;
+using namespace rw::models;
+using namespace rw::sensor;
+using namespace rwlibs::opengl;
+using namespace rwlibs::simulation;
+
+using namespace std;
+using namespace rw::math;
+using namespace rw::pathplanning;
+using namespace rw::proximity;
+using namespace rw::trajectory;
+using namespace rwlibs::pathplanners;
+using namespace rwlibs::proximitystrategies;
+
+
+using namespace rws;
+
+using namespace std::placeholders;
 
 SamplePlugin::SamplePlugin():
     RobWorkStudioPlugin("SamplePluginUI", QIcon(":/pa_icon.png"))
@@ -13,19 +60,23 @@ SamplePlugin::SamplePlugin():
 	_timer = new QTimer(this);
     connect(_timer, SIGNAL(timeout()), this, SLOT(timer()));
 
-	// connect(_slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderMoved()));
+	// slider
 	connect(_slider, SIGNAL(sliderMoved(int)), this, SLOT(onSliderMoved()));
 	connect(_slider, SIGNAL(sliderPressed()), this, SLOT(onSliderPressed()));
 	connect(_slider, SIGNAL(sliderReleased()), this, SLOT(onSliderReleased()));
 
-	// now connect stuff from the ui component
-	connect(_btn_reach    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_state_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_reset_playback    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_im    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_scan    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_btn_calcpath    ,SIGNAL(pressed()), this, SLOT(btnPressed()) );
-	connect(_spinBox  ,SIGNAL(valueChanged(int)), this, SLOT(btnPressed()) );
+	// nowbuttons
+	connect(_btn_integrated, SIGNAL(pressed()), this, SLOT(btnPressed()));
+	connect(_btn_detect, SIGNAL(pressed()), this, SLOT(btnPressed()));
+	connect(_btn_reach, SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_state_playback, SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_reset_playback, SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_im, SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_scan, SIGNAL(pressed()), this, SLOT(btnPressed()) );
+	connect(_btn_calcpath, SIGNAL(pressed()), this, SLOT(btnPressed()) );
+
+	//spinner
+	connect(_spinBox, SIGNAL(valueChanged(int)), this, SLOT(btnPressed()) );
 
 	globals::framegrabber = NULL;
 	
@@ -106,6 +157,53 @@ void SamplePlugin::onSliderReleased()
 		_timer->start();
 }
 
+void SamplePlugin::detect_dog()
+{
+	using namespace pointcloud;
+	auto scene = capture_pointcloud();
+	auto object = load_object();
+	auto detected_pose = pointcloud::do_3d_alignment(scene, object);
+	globals::detected->moveTo(detected_pose, globals::state);
+}
+void SamplePlugin::analyze_reach()
+{
+	reach::ReachData rdata;
+	rdata.wc = globals::wc;
+	rdata.robot = globals::robot;
+	rdata.gripper = globals::gripper;
+	rdata.targetUp = globals::dogmiddle;
+	rdata.targetSide = globals::doghead;
+	rdata.detector = globals::detector;
+	rdata.goal = globals::goal;
+	rdata.num_pos = _spinBox->value();
+	rdata.state_ptr = &globals::state;
+	rdata.states_ptr = &globals::states;
+
+	reach::analyse_reachability(rdata);
+}
+void SamplePlugin::plan_path()
+{
+	cout<<"preparing for calculating path"<<endl;
+	// pause playback
+	_timer->stop();
+	// set up state
+	setDefaultState();
+	globals::gripper->setQ(Q(1, 0.045), globals::state);
+	globals::robotRef->moveTo(reach::bestRobotPose, globals::state);
+	Q from = reach::bestPickupConf;
+	Q to = reach::bestPlaceConf;
+	// rw::invkin::ClosedFormIKSolverUR::Ptr solver = ownedPtr(new rw::invkin::ClosedFormIKSolverUR(globals::robot, globals::state));
+	// auto toTarget = rrtconnect::relativeTransformCalc(globals::goal, globals::state);
+	// Q to = solver->solve(toTarget, globals::state)[0];
+	globals::robot->setQ(from, globals::state);
+	Kinematics::gripFrame(globals::dog.get(), globals::graspTcp.get(), globals::state);
+	setCurrentState();
+	rw::math::Math::seed();
+	cout<<"calculating path"<<endl;
+	rrtconnect::test_rrt(from, to);
+	cout<<"path calculated"<<endl;
+}
+
 void SamplePlugin::btnPressed() {
     QObject *obj = sender();
 	if(obj == _btn_state_playback)
@@ -129,40 +227,38 @@ void SamplePlugin::btnPressed() {
 		_slider->setValue(_step);
 		updatePlaybackState();
 	}
+	else if(obj==_spinBox){
+		log().info() << "spin value:" << _spinBox->value() << "\n";
+	}
+	else if(obj == _btn_detect)
+	{
+		cout<<"detect"<<endl;
+		setDefaultState();
+		detect_dog();
+		setCurrentState();
+	}
 	else if(obj == _btn_reach)
 	{
 		cout<<"reach"<<endl;
-		reach::analyse_reachability(globals::wc, globals::robot, globals::dogmiddle, globals::doghead, globals::detector, globals::goal, _spinBox->value());
+		globals::states.clear();
+		analyze_reach();
 	}
 	else if(obj==_btn_calcpath){
-		cout<<"preparing for calculating path"<<endl;
-		// pause playback
-        _timer->stop();
-		// set up state
-		setDefaultState();
-		globals::gripper->setQ(Q(1, 0.045), globals::state);
-		globals::robotRef->moveTo(reach::bestRobotPose, globals::state);
-		Q from = reach::bestPickupConf;
-		Q to = reach::bestPlaceConf;
-		// rw::invkin::ClosedFormIKSolverUR::Ptr solver = ownedPtr(new rw::invkin::ClosedFormIKSolverUR(globals::robot, globals::state));
-		// auto toTarget = rrtconnect::relativeTransformCalc(globals::goal, globals::state);
-		// Q to = solver->solve(toTarget, globals::state)[0];
-		globals::robot->setQ(from, globals::state);
-		Kinematics::gripFrame(globals::dog.get(), globals::graspTcp.get(), globals::state);
-		setCurrentState();
-        rw::math::Math::seed();
-		cout<<"calculating path"<<endl;
-        rrtconnect::test_rrt(from, to);
-		cout<<"path calculated"<<endl;
-
-	} else if(obj==_spinBox){
-		log().info() << "spin value:" << _spinBox->value() << "\n";
+		cout<<"plan"<<endl;
+		plan_path();
+	}
+	else if(obj == _btn_integrated)
+	{
+		cout<<"integrated"<<endl;
+		detect_dog();
+		analyze_reach();
+		plan_path();
 	}
 	else if( obj==_btn_im ){
 		imager::getImage(_im_label);
 	}
 	else if( obj==_btn_scan ){
-		imager::get25DImage();
+		imager::write2DImage();
 	}
 }
 

@@ -1,11 +1,31 @@
+#ifndef IMAGER_FUNCTIONS_HPP
+#define IMAGER_FUNCTIONS_HPP
+
 // OpenCV 3
 #include <opencv2/opencv.hpp>
 
 #include "globals.hpp"
+#include "config.h"
 
 namespace imager
 {
     using namespace cv;
+    using namespace rw::common;
+    using namespace rw::graphics;
+    using namespace rw::kinematics;
+    using namespace rw::loaders;
+    using namespace rw::models;
+    using namespace rw::sensor;
+    using namespace rwlibs::opengl;
+    using namespace rwlibs::simulation;
+
+    using namespace std;
+    using namespace rw::math;
+    using namespace rw::pathplanning;
+    using namespace rw::proximity;
+    using namespace rw::trajectory;
+    using namespace rwlibs::pathplanners;
+    using namespace rwlibs::proximitystrategies;
 
     Mat toOpenCVImage(const Image& img) {
         Mat res(img.getHeight(),img.getWidth(), CV_8SC3);
@@ -13,8 +33,9 @@ namespace imager
         return res;
     }
 
-    void get25DImage()
+    vector<rw::geometry::PointCloud> get25DImage()
     {
+        vector<rw::geometry::PointCloud> clouds;
         if (globals::framegrabber25D != NULL)
         {
             for(size_t i = 0; i < globals::cameras25D.size(); i++)
@@ -23,27 +44,36 @@ namespace imager
                 Frame* cameraFrame25D = globals::wc->findFrame(globals::cameras25D[i]); // "Camera");
                 globals::framegrabber25D->grab(cameraFrame25D, globals::state);
 
-                //const Image& image = _framegrabber->getImage();
-
-                const rw::geometry::PointCloud* img = &(globals::framegrabber25D->getImage());
-
-                std::ofstream output(globals::cameras25D[i] + ".pcd");
-                output << "# .PCD v.5 - Point Cloud Data file format\n";
-                output << "FIELDS x y z\n";
-                output << "SIZE 4 4 4\n";
-                output << "TYPE F F F\n";
-                output << "WIDTH " << img->getWidth() << "\n";
-                output << "HEIGHT " << img->getHeight() << "\n";
-                output << "POINTS " << img->getData().size() << "\n";
-                output << "DATA ascii\n";
-                for(const auto &p_tmp : img->getData())
-                {
-                    rw::math::Vector3D<float> p = p_tmp;
-                    output << p(0) << " " << p(1) << " " << p(2) << "\n";
-                }
-                output.close();
-
+                clouds.push_back(globals::framegrabber25D->getImage());
             }
+        }
+        return clouds;
+    }
+
+    void write2DImage()
+    {
+        vector<rw::geometry::PointCloud> clouds = get25DImage();
+
+
+        for(int i = 0; i < clouds.size(); i++)
+        {       
+            string path(PATH_GENERATE);
+            path.append(globals::cameras25D[i] + ".pcd");
+            std::ofstream output(path);
+            output << "# .PCD v.5 - Point Cloud Data file format\n";
+            output << "FIELDS x y z\n";
+            output << "SIZE 4 4 4\n";
+            output << "TYPE F F F\n";
+            output << "WIDTH " << clouds[i].getWidth() << "\n";
+            output << "HEIGHT " << clouds[i].getHeight() << "\n";
+            output << "POINTS " << clouds[i].getData().size() << "\n";
+            output << "DATA ascii\n";
+            for(const auto &p_tmp : clouds[i].getData())
+            {
+                rw::math::Vector3D<float> p = p_tmp;
+                output << p(0) << " " << p(1) << " " << p(2) << "\n";
+            }
+            output.close();
         }
     }
 
@@ -67,7 +97,9 @@ namespace imager
                 cv::flip(image, imflip, 1);
                 cv::cvtColor( imflip, imflip_mat, COLOR_RGB2BGR );
 
-                cv::imwrite(globals::cameras[i] + ".png", imflip_mat );
+                string path(PATH_GENERATE);
+                path.append(globals::cameras[i] + ".png");
+                cv::imwrite(path, imflip_mat);
 
                 // Show in QLabel
                 QImage img(imflip.data, imflip.cols, imflip.rows, imflip.step, QImage::Format_RGB888);
@@ -79,3 +111,5 @@ namespace imager
         }
     }
 }
+
+#endif /*IMAGER_FUNCTIONS_HPP*/

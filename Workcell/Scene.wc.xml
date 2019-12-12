@@ -81,28 +81,40 @@
 		<RPY> 0 0 0 </RPY> <Pos> 0 0 0 </Pos>
 	</Frame>
 
+	<Frame name="TemplateDetected" refframe="Camera_Left" type="Movable" daf="true" >
+		<RPY> 117.7120106 20.2801915 172.4232837 </RPY> <Pos> -0.0473 -0.0915 -1.1255 </Pos>
+	</Frame>
+
+	<Frame name="ScannerDetected" refframe="Scanner25D" type="Movable" daf="true" >
+		<RPY> 0 0 0 </RPY> <Pos> 0 0 0 </Pos>
+	</Frame>
+
 <!-- Cameras -->
 
 	<Frame name="CamRef" refframe="WORLD" type="Movable">
 		<Pos>1 0.5 0.5</Pos> <RPY>-70 0 -60</RPY>
 	</Frame>
 
-<Frame name="Camera_Right" refframe="CamRef" type="Movable">
-	<Pos>0.1 0 0</Pos>
-	<RPY>0 0 0</RPY>
-	<Property name="Camera" desc="[fovy,width,height]">50 640 480</Property>
-</Frame>
-<Frame name="Camera_Left" refframe="CamRef" type="Movable">
-	<Pos>-0.1 0 0</Pos>
-	<RPY>0 0 0</RPY>
-	<Property name="Camera" desc="[fovy,width,height]">50 640 480</Property>
-</Frame>
+	<Frame name="Camera_Right" refframe="CamRef" type="Movable">
+		<Pos>0.1 0 0</Pos>
+		<RPY>0 0 0</RPY>
+		<Property name="Camera" desc="[fovy,width,height]">50 640 480</Property>
+	</Frame>
+	<Frame name="Camera_Left" refframe="CamRef" type="Movable">
+		<Pos>-0.1 0 0</Pos>
+		<RPY>0 0 0</RPY>
+		<Property name="Camera" desc="[fovy,width,height]">50 640 480</Property>
+	</Frame>
 
-<Frame name="Scanner25D" refframe="CamRef" type="Movable">
-	<Pos>0 0 0</Pos>
-	<RPY>0 0 0</RPY>
-	<Property name="Scanner25D" desc="[fovy,width,height]">50 640 480</Property>
-</Frame>
+	<Frame name="ScanRef" refframe="WORLD" type="Movable">
+		<Pos>1 0.5 0.5</Pos> <RPY>90 0 60</RPY>
+	</Frame>
+
+	<Frame name="Scanner25D" refframe="ScanRef" type="Movable">
+		<Pos>0 0 0</Pos>
+		<RPY>0 0 0</RPY>
+		<Property name="Scanner25D" desc="[fovy,width,height]">50 640 480</Property>
+	</Frame>
 
 <CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
 

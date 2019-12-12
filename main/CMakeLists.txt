@@ -12,17 +12,20 @@
 #
 # Test CMake version
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
 
 # The name of the project.
 PROJECT(RoViPlugin)
 
 # Set C++ standard to C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_CXX_STANDARD 14)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Used to resolve absolute path names
 SET(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+SET(PATH_RESOURCE ${ROOT}/rsc/)
+SET(PATH_SOURCE ${ROOT}/src/)
+SET(PATH_GENERATE ${ROOT}/generated/)
 
 # Set the level of verbosity when running make
 set(CMAKE_VERBOSE_MAKEFILE False)
@@ -51,6 +54,12 @@ FIND_PACKAGE(RobWorkStudio REQUIRED)
 INCLUDE_DIRECTORIES( ${ROBWORKSTUDIO_INCLUDE_DIRS} )
 LINK_DIRECTORIES( ${ROBWORKSTUDIO_LIBRARY_DIRS} )
 
+# PCL
+find_package(PCL 1.7 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
 # Use OpenCV 3
 find_package(OpenCV 3 REQUIRED)
 
@@ -64,7 +73,8 @@ SET(UIS_FILES src/SamplePlugin.ui )
 QT5_WRAP_UI(UIS_OUT_H ${UIS_FILES})
 
 #Need to add the current binary dir to the include directory because the generated source files are placed here
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_BINARY_DIR})
+configure_file(src/config.h.in config.h)
 
 # MOC
 QT5_WRAP_CPP(MocSrcFiles src/SamplePlugin.hpp)
@@ -77,5 +87,5 @@ SET(SrcFiles src/SamplePlugin.cpp ${UIS_OUT_H})
 
 # The shared library to build:
 ADD_LIBRARY(${PROJECT_NAME} MODULE ${SrcFiles} ${MocSrcFiles}  ${RccSrcFiles})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${ROBWORKSTUDIO_LIBRARIES} ${ROBWORK_LIBRARIES} ${OpenCV_LIBS})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${ROBWORKSTUDIO_LIBRARIES} ${ROBWORK_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
