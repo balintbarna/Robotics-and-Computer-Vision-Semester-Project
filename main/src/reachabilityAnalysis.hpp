@@ -23,6 +23,20 @@ using namespace rw::common;
 using namespace rwlibs::proximitystrategies;
 using namespace rw::invkin;
 
+struct ReachData
+{
+	WorkCell::Ptr wc;
+	SerialDevice::Ptr robot;
+	TreeDevice::Ptr gripper;
+	MovableFrame::Ptr targetUp;
+	MovableFrame::Ptr targetSide;
+	CollisionDetector::Ptr detector;
+	MovableFrame::Ptr goal;
+	State *state_ptr;
+	vector<State> *states_ptr;
+	int num_pos;
+};
+
 
 Transform3D<double> bestRobotPose;
 int bestRobotPoseValue = 0;
@@ -107,32 +121,33 @@ void check_target(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr t
 	}
 }
 
-int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame::Ptr targetUp, MovableFrame::Ptr targetSide, CollisionDetector::Ptr detector, MovableFrame::Ptr goal, int num_pos)
+int analyse_reachability(ReachData &data)
 {
 	//load workcell
-	if(NULL==wc){
+	if(NULL==data.wc){
 		RW_THROW("COULD NOT LOAD scene... check path!");
 		return -1;
 	}
 
 	// find relevant frames
-	if(NULL==targetUp){
+	if(NULL==data.targetUp){
 		RW_THROW("COULD not find movable frame targetUp ... check model");
 		return -1;
 	}
-	if(NULL==targetSide){
+	if(NULL==data.targetSide){
 		RW_THROW("COULD not find movable frame targetSide ... check model");
 		return -1;
 	}
 
-	if(NULL==robot){
+	if(NULL==data.robot){
 		RW_THROW("COULD not find device UR5 ... check model");
 		return -1;
 	}
 
 	// get the default state
-	State state = wc->getDefaultState();
-	globals::gripper->setQ(Q(1, 0.035), state);
+	State state = *data.state_ptr;
+	auto &states = *data.states_ptr;
+	data.gripper->setQ(Q(1, 0.035), state);
 
 	vector<State> bestStates;
 	Q pickupConf;
@@ -148,7 +163,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 	f.open("reachData.csv");
     f << "time\tx\ty\tsols" << "\n";
 	Timer t;
-	for(int i = 0; i < num_pos; i++)
+	for(int i = 0; i < data.num_pos; i++)
 	{
 
 		t.resetAndResume();
@@ -168,21 +183,21 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 		// do checks in that pose
 		vector<State> collisionFreeStates;
 		// picup
-		check_target(wc,robot,targetUp,targetSide,detector,collisionFreeStates, state);
+		check_target(data.wc,data.robot,data.targetUp,data.targetSide,data.detector,collisionFreeStates, state);
 		Q tempPickup;
 		Q tempPlace;
 		if(collisionFreeStates.size() > 0)
 		{
-			tempPickup = robot->getQ(collisionFreeStates[0]);
+			tempPickup = data.robot->getQ(collisionFreeStates[0]);
 		}
 		auto statesSize = collisionFreeStates.size();
-		if(goal != NULL)
+		if(data.goal != NULL)
 		{
 			// place
-			check_target(wc,robot,goal,goal,detector,collisionFreeStates, state);
+			check_target(data.wc,data.robot,data.goal,data.goal,data.detector,collisionFreeStates, state);
 			if(statesSize < collisionFreeStates.size())
 			{
-				tempPlace = robot->getQ(collisionFreeStates[statesSize]);
+				tempPlace = data.robot->getQ(collisionFreeStates[statesSize]);
 			}
 		}
 		if(collisionFreeStates.size() > bestStates.size())
@@ -197,7 +212,7 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 
 	}
 
-	globals::states = bestStates;
+	states.insert(std::end(states), std::begin(bestStates), std::end(bestStates));
 
 	int val = bestStates.size();
 	if(val > bestRobotPoseValue)
@@ -207,6 +222,8 @@ int analyse_reachability(WorkCell::Ptr wc, SerialDevice::Ptr robot, MovableFrame
 		bestPickupConf = pickupConf;
 		bestPlaceConf = placeConf;
 	}
+
+	globals::robotRef->setTransform(bestRobotPose, *data.state_ptr);
 	
 	f.close();
 

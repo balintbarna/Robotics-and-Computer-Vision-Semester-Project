@@ -56,6 +56,10 @@ private slots:
     void setCurrentState();
     void stateChangedListener(const rw::kinematics::State& state);
 
+    void detect_dog();
+    void analyze_reach();
+    void plan_path();
+
 private:
     QTimer* _timer;
     QTimer* _timer25D;
