@@ -242,6 +242,7 @@ void SamplePlugin::btnPressed() {
 		cout<<"reach"<<endl;
 		globals::states.clear();
 		analyze_reach();
+		setCurrentState();
 	}
 	else if(obj==_btn_calcpath){
 		cout<<"plan"<<endl;

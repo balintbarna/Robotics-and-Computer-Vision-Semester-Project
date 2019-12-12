@@ -212,8 +212,6 @@ int analyse_reachability(ReachData &data)
 
 	}
 
-	states.insert(std::end(states), std::begin(bestStates), std::end(bestStates));
-
 	int val = bestStates.size();
 	if(val > bestRobotPoseValue)
 	{
@@ -223,7 +221,6 @@ int analyse_reachability(ReachData &data)
 		bestPlaceConf = placeConf;
 	}
 
-	globals::robotRef->setTransform(bestRobotPose, *data.state_ptr);
 	
 	f.close();
 
@@ -231,6 +228,9 @@ int analyse_reachability(ReachData &data)
 		 << bestStates.size()
 		 << " collision-free inverse kinematics solutions!" << endl;
 
+
+	states.insert(std::end(states), std::begin(bestStates), std::end(bestStates));
+	globals::robotRef->setTransform(bestRobotPose, *data.state_ptr);
 
 	return 0;
 }
