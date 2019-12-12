@@ -230,6 +230,9 @@ int analyse_reachability(ReachData &data)
 
 
 	states.insert(std::end(states), std::begin(bestStates), std::end(bestStates));
+	auto s = bestStates.size();
+	if(s>0)
+		states.push_back(bestStates[s-1]);
 
 	return 0;
 }

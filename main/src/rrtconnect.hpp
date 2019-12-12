@@ -163,6 +163,7 @@ void test_rrt(RrtData data) {
         f<<baseTdog.P()[0]<<"\t"<<baseTdog.P()[1]<<"\t"<<baseTdog.P()[2]<<endl;
         data.states->push_back(startState);
     }
+    data.states->push_back(startState);
     f.close();
     cout<<"saved best path"<<endl;
 }
